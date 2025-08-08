@@ -1,0 +1,21 @@
+# Node modules locales
+node_modules
+
+# Archivos de logs
+*.log
+
+# Archivos temporales o del sistema
+.DS_Store
+.env.local
+.env.development
+.env.test
+
+# Carpetas que se generan fuera del código fuente
+uploads/*
+!uploads/.gitkeep  # si usas este archivo vacío para conservar estructura
+
+# Archivos específicos que no quieres en la imagen
+.dockerignore
+Dockerfile
+docker-compose.yml
+README.md

@@ -1,0 +1,59 @@
+version: '3.9'
+
+services:
+  postgresql:
+    image: postgres:latest
+    container_name: postgresql-iai
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: example
+      POSTGRES_DB: iai_sistemapermisos
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./postgresql_data:/var/lib/postgresql/data
+
+  backend:
+    build:
+      context: ./backend
+    container_name: backend
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./backend/uploads:/app/uploads
+    depends_on:
+      - postgresql
+    environment:
+      PORT: 3000
+      DB_HOST: postgresql
+      DB_PORT: 5432
+      DB_USER: postgres
+      DB_PASSWORD: example
+      DB_NAME: iai_sistemapermisos
+      JWT_SECRET: 586E3272357538782F413F4428472B4B6250655368566B597033733676397924
+      URL_FRONTEND: http://10.22.114.172
+      EMAIL_ADDRESS: parangaricutimiricuaro465879@gmail.com
+      EMAIL_PERMISOS: parangaricutimiricuaro465879+permisos@gmail.com
+      EMAIL_DIRECTOR: parangaricutimiricuaro465879+director@gmail.com
+      EMAIL_SOPORTE: parangaricutimiricuaro465879+soporte@gmail.com
+      EMAIL_PASSWORD: sgvx dfhz svnj rmzj
+      IMAP_HOST: imap.gmail.com
+      IMAP_PORT: 993
+      IMAP_SECURE: "true"
+      SMTP_HOST: smtp.gmail.com
+      SMTP_PORT: 587
+      SMTP_SECURE: "false"
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        VITE_API_URL: "http://10.22.114.172:3000/api"
+    container_name: frontend
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    depends_on:
+      - backend

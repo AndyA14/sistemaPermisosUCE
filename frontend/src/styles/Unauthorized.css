@@ -1,0 +1,46 @@
+.unauthorized-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  background-image: url('../assets/Unauthorized.jpg');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+.unauthorized-card {
+  background-color: #fff;
+  padding: 2rem 3rem;
+  border-radius: 12px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+  text-align: center;
+  border-left: 6px solid #dc3545;
+}
+
+.unauthorized-title {
+  font-size: 1.8rem;
+  color: #dc3545;
+  margin-bottom: 1rem;
+}
+
+.unauthorized-message {
+  font-size: 1rem;
+  color: #555;
+  margin-bottom: 1.5rem;
+}
+
+.unauthorized-button {
+  padding: 0.6rem 1.2rem;
+  background-color: #dc3545;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: background-color 0.3s ease;
+}
+
+.unauthorized-button:hover {
+  background-color: #c82333;
+}

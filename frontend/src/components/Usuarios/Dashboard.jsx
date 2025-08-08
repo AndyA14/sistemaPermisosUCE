@@ -1,0 +1,392 @@
+import React, { useEffect, useState, useRef } from 'react';
+import {
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
+  PieChart, Pie, Cell, LineChart, Line, ScatterChart, Scatter, Radar, RadarChart, PolarGrid,
+  PolarAngleAxis, PolarRadiusAxis
+} from 'recharts';
+import { toast, ToastContainer } from 'react-toastify';
+import LoadingModal from '../../components/LoadingModal.jsx';
+import {
+  obtenerTopDocentes,
+  obtenerPermisosPorTipo,
+  obtenerPermisosPorMes,
+  obtenerUltimosPermisos,
+} from '../../services/api.js';
+import '../../styles/Dashboard.css';
+
+const COLORS = ['#8884d8', '#82ca9d', '#ffc658', '#ff7f50', '#a29bfe', '#55efc4', '#ff6b81', '#e17055'];
+const COLORS_STATES = { autorizado: '#2ecc71', denegado: '#e74c3c', pendiente: '#f1c40f' };
+const COLORS_ACTIVOS = ['#55efc4', '#d63031'];
+
+const DashboardTTHH = () => {
+  const [topUsuarios, setTopUsuarios] = useState([]);
+  const [permisosPorTipo, setPermisosPorTipo] = useState([]);
+  const [permisosPorMes, setPermisosPorMes] = useState([]);
+  const [ultimosPermisos, setUltimosPermisos] = useState([]);
+  const [subtiposData, setSubtiposData] = useState([]);
+  const [lineChartData, setLineChartData] = useState([]);
+
+  // Nuevos estados para gráficos pedidos
+  const [duracionPromedioTipoSubtipo, setDuracionPromedioTipoSubtipo] = useState([]);
+  const [conteoEstadoTipo, setConteoEstadoTipo] = useState([]);
+  const [permisosPorDuracion, setPermisosPorDuracion] = useState([]);
+  const [conteoDiarioEstado, setConteoDiarioEstado] = useState([]);
+  const [vacacionesPorTipo, setVacacionesPorTipo] = useState([]);
+
+  const [loading, setLoading] = useState(false);
+  const toastId = useRef(null);
+
+  useEffect(() => {
+    const cargarDatos = async () => {
+      setLoading(true);
+      try {
+        const [top, tipos, meses, ultimos] = await Promise.all([
+          obtenerTopDocentes(),
+          obtenerPermisosPorTipo(),
+          obtenerPermisosPorMes(),
+          obtenerUltimosPermisos(),
+        ]);
+
+        // Formatear top usuarios
+        setTopUsuarios(top.map(d => ({
+          usuario_id: `${d.nombres} ${d.apellidos}`,
+          total: Number(d.total),
+        })));
+
+        // Permisos por tipo
+        setPermisosPorTipo(tipos.map(t => ({
+          tipo: t.tipo,
+          total: Number(t.total),
+        })));
+
+        // Permisos por mes y estado
+        const agrupados = meses.reduce((acc, { mes, estado, total }) => {
+          if (!acc[mes]) acc[mes] = { mes, autorizado: 0, denegado: 0 };
+          if (estado === 'autorizado' || estado === 'denegado') {
+            acc[mes][estado] = Number(total);
+          }
+          return acc;
+        }, {});
+        setPermisosPorMes(Object.values(agrupados));
+
+        // Procesar permisos recientes para todos los gráficos nuevos
+        const permisosProcesados = ultimos.map(p => {
+          const dias = ((new Date(p.fecha_fin) - new Date(p.fecha_inicio)) / (1000 * 60 * 60 * 24)) + 1;
+          return {
+            ...p,
+            fecha: p.fecha_solicitud,
+            usuario: `${p.usuario.nombres} ${p.usuario.apellidos}`,
+            tipo: p.tipo?.nombre || 'Desconocido',
+            subtipo: p.tipo?.sub_tipo || 'Otro',
+            estado: p.estado_general || 'pendiente',
+            dias: Number(dias.toFixed(1)),
+            activo: p.activo,
+            carga_vacaciones: p.carga_vacaciones,
+          };
+        });
+        setUltimosPermisos(permisosProcesados);
+
+        // Subtipos
+        const subtipoMap = {};
+        permisosProcesados.forEach(p => {
+          if (!subtipoMap[p.subtipo]) subtipoMap[p.subtipo] = 0;
+          subtipoMap[p.subtipo]++;
+        });
+        setSubtiposData(Object.entries(subtipoMap).map(([subtipo, total]) => ({ subtipo, total })));
+
+        // Línea evolución mensual por estado
+        const lineMap = {};
+        permisosProcesados.forEach(p => {
+          const mes = new Date(p.fecha).toLocaleDateString('es-EC', { year: 'numeric', month: 'short' });
+          if (!lineMap[mes]) lineMap[mes] = { mes, autorizado: 0, denegado: 0, pendiente: 0 };
+          lineMap[mes][p.estado] = (lineMap[mes][p.estado] || 0) + 1;
+        });
+        setLineChartData(Object.values(lineMap));
+
+        // 1. Duración promedio permisos por tipo y subtipo
+        const duracionMap = {};
+        permisosProcesados.forEach(({ tipo, subtipo, dias }) => {
+          const key = `${tipo}___${subtipo}`;
+          if (!duracionMap[key]) duracionMap[key] = { tipo, subtipo, totalDias: 0, count: 0 };
+          duracionMap[key].totalDias += dias;
+          duracionMap[key].count++;
+        });
+        const duracionPromedio = Object.values(duracionMap).map(({ tipo, subtipo, totalDias, count }) => ({
+          tipo,
+          subtipo,
+          duracionPromedio: +(totalDias / count).toFixed(2),
+        }));
+        setDuracionPromedioTipoSubtipo(duracionPromedio);
+
+        // 2. Conteo permisos por estado y tipo (barras apiladas)
+        const estadoTipoMap = {};
+        permisosProcesados.forEach(({ tipo, estado }) => {
+          if (!estadoTipoMap[tipo]) estadoTipoMap[tipo] = { tipo, autorizado: 0, denegado: 0, pendiente: 0 };
+          estadoTipoMap[tipo][estado] = (estadoTipoMap[tipo][estado] || 0) + 1;
+        });
+        setConteoEstadoTipo(Object.values(estadoTipoMap));
+
+        // 3. Permisos activos vs no activos por tipo
+        const activosMap = {};
+        permisosProcesados.forEach(({ tipo, activo }) => {
+          if (!activosMap[tipo]) activosMap[tipo] = { tipo, activos: 0, inactivos: 0 };
+          if (activo) activosMap[tipo].activos++;
+          else activosMap[tipo].inactivos++;
+        });
+
+        // 4. Cantidad de permisos por usuario (ranking)
+        const usuarioMap = {};
+        permisosProcesados.forEach(({ usuario }) => {
+          if (!usuarioMap[usuario]) usuarioMap[usuario] = 0;
+          usuarioMap[usuario]++;
+        });
+        const rankingUsuarios = Object.entries(usuarioMap)
+          .map(([usuario, total]) => ({ usuario, total }))
+          .sort((a, b) => b.total - a.total)
+          .slice(0, 10); // Top 10
+        setTopUsuarios(rankingUsuarios);
+
+        // 5. Distribución de permisos por rango de duración
+        const duracionCategorias = {
+          '1 día': 0,
+          '2-3 días': 0,
+          '4-7 días': 0,
+          '>7 días': 0,
+        };
+        permisosProcesados.forEach(({ dias }) => {
+          if (dias <= 1) duracionCategorias['1 día']++;
+          else if (dias <= 3) duracionCategorias['2-3 días']++;
+          else if (dias <= 7) duracionCategorias['4-7 días']++;
+          else duracionCategorias['>7 días']++;
+        });
+        setPermisosPorDuracion(Object.entries(duracionCategorias).map(([categoria, total]) => ({ categoria, total })));
+
+        // 6. Cantidad de permisos por día (fecha_solicitud) con estado (líneas apiladas)
+        const diarioEstadoMap = {};
+        permisosProcesados.forEach(({ fecha, estado }) => {
+          if (!diarioEstadoMap[fecha]) diarioEstadoMap[fecha] = { fecha, autorizado: 0, denegado: 0, pendiente: 0 };
+          diarioEstadoMap[fecha][estado] = (diarioEstadoMap[fecha][estado] || 0) + 1;
+        });
+        setConteoDiarioEstado(Object.values(diarioEstadoMap).sort((a, b) => new Date(a.fecha) - new Date(b.fecha)));
+
+        // 7. Carga de vacaciones por tipo y subtipo
+        const vacacionesMap = {};
+        permisosProcesados.forEach(({ tipo, subtipo, carga_vacaciones }) => {
+          const key = `${tipo} - ${subtipo}`;
+          if (!vacacionesMap[key]) {
+            vacacionesMap[key] = { nombre: key, conCarga: 0, sinCarga: 0 };
+          }
+          if (carga_vacaciones) {
+            vacacionesMap[key].conCarga++;
+          } else {
+            vacacionesMap[key].sinCarga++;
+          }
+        });
+        setVacacionesPorTipo(Object.values(vacacionesMap));
+
+        // Toast éxito
+        if (!toast.isActive(toastId.current)) {
+          toastId.current = toast.success('Datos del dashboard cargados correctamente');
+        }
+      } catch (error) {
+        console.error('Error al cargar dashboard TTHH:', error);
+        toast.error('Error al cargar los datos del dashboard');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    cargarDatos();
+  }, []);
+
+  return (
+    <>
+      <ToastContainer position="top-right" autoClose={4000} theme="colored" />
+      {loading && <LoadingModal visible={true} />}
+
+      <div className="dashboard-tthh-container">
+        <h2>📊 Dashboard </h2>
+
+        <section className="charts-section">
+
+          {/* 1. Duración promedio permisos por tipo y subtipo (Barras agrupadas) */}
+          <div className="chart-card">
+            <h3>Duración Promedio de Permisos por Tipo y Subtipo</h3>
+            <ResponsiveContainer width="100%" height={350}>
+              <BarChart
+                data={duracionPromedioTipoSubtipo}
+                margin={{ top: 20, right: 30, left: 20, bottom: 80 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis
+                  dataKey="tipo"
+                  interval={0}
+                  angle={-45}
+                  textAnchor="end"
+                  height={60}
+                />
+                <YAxis label={{ value: 'Días Promedio', angle: -90, position: 'insideLeft' }} />
+                <Tooltip />
+                <Legend />
+                {/* Renderizar barras agrupadas por subtipo */}
+                {Array.from(new Set(duracionPromedioTipoSubtipo.map(d => d.subtipo))).map((subtipo, idx) => (
+                  <Bar
+                    key={subtipo}
+                    dataKey={(d) => (d.subtipo === subtipo ? d.duracionPromedio : 0)}
+                    name={subtipo}
+                    fill={COLORS[idx % COLORS.length]}
+                    // Asigna una clave que filtre el dato correcto
+                    // Para agrupar por tipo se necesita una pequeña transformación,
+                    // pero recharts no soporta agrupaciones directas sin manipular los datos,
+                    // por simplicidad se hará así, filtrando por subtipo (podría mejorarse)
+                  />
+                ))}
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+
+          {/* 2. Conteo permisos por estado y tipo (Barras apiladas) */}
+          <div className="chart-card">
+            <h3>Conteo de Permisos por Estado y Tipo</h3>
+            <ResponsiveContainer width="100%" height={350}>
+              <BarChart
+                data={conteoEstadoTipo}
+                margin={{ top: 20, right: 30, left: 20, bottom: 60 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis
+                  dataKey="tipo"
+                  interval={0}
+                  angle={-45}
+                  textAnchor="end"
+                  height={60}
+                />
+                <YAxis />
+                <Tooltip />
+                <Legend />
+                {['autorizado', 'denegado', 'pendiente'].map((estado) => (
+                  <Bar
+                    key={estado}
+                    dataKey={estado}
+                    stackId="a"
+                    fill={COLORS_STATES[estado]}
+                    name={estado.charAt(0).toUpperCase() + estado.slice(1)}
+                  />
+                ))}
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+
+          {/* 4. Cantidad de permisos por usuario (Top 10) */}
+          <div className="chart-card">
+            <h3>Top 10 Usuarios con Más Permisos Solicitados</h3>
+            <ResponsiveContainer width="100%" height={350}>
+              <BarChart
+                data={topUsuarios}
+                margin={{ top: 20, right: 30, left: 20, bottom: 80 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis
+                  dataKey="usuario"
+                  interval={0}
+                  angle={-45}
+                  textAnchor="end"
+                  height={60}
+                />
+                <YAxis />
+                <Tooltip />
+                <Legend />
+                <Bar dataKey="total" fill="#8884d8" name="Permisos" />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+
+          {/* 5. Distribución permisos por rango de duración (Bar) */}
+          <div className="chart-card">
+            <h3>Distribución de Permisos por Rango de Duración</h3>
+            <ResponsiveContainer width="100%" height={350}>
+              <BarChart
+                data={permisosPorDuracion}
+                margin={{ top: 20, right: 30, left: 20, bottom: 60 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis
+                  dataKey="categoria"
+                  interval={0}
+                  angle={-25}
+                  textAnchor="end"
+                  height={50}
+                />
+                <YAxis />
+                <Tooltip />
+                <Legend />
+                <Bar dataKey="total" fill="#a29bfe" name="Permisos" />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+
+          {/* 6. Cantidad de permisos por día con estado (LineStacked) */}
+          <div className="chart-card">
+            <h3>Cantidad de Permisos por Día (Segmentado por Estado)</h3>
+            <ResponsiveContainer width="100%" height={350}>
+              <LineChart
+                data={conteoDiarioEstado}
+                margin={{ top: 20, right: 30, left: 20, bottom: 80 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis
+                  dataKey="fecha"
+                  interval={0}
+                  angle={-45}
+                  textAnchor="end"
+                  height={60}
+                />
+                <YAxis />
+                <Tooltip />
+                <Legend />
+                {['autorizado', 'denegado', 'pendiente'].map(estado => (
+                  <Line
+                    key={estado}
+                    type="monotone"
+                    dataKey={estado}
+                    stackId="a"
+                    stroke={COLORS_STATES[estado]}
+                    name={estado.charAt(0).toUpperCase() + estado.slice(1)}
+                  />
+                ))}
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+          
+          {/* 7. Carga de Vacaciones por Tipo de Permiso (barras apiladas) */}
+          <div className="chart-card">
+            <h3>Carga de Vacaciones por Tipo de Permiso</h3>
+            <ResponsiveContainer width="100%" height={350}>
+              <BarChart
+                data={vacacionesPorTipo}
+                margin={{ top: 20, right: 30, left: 20, bottom: 80 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis
+                  dataKey="nombre"
+                  interval={0}
+                  angle={-45}
+                  textAnchor="end"
+                  height={60}
+                />
+                <YAxis />
+                <Tooltip />
+                <Legend />
+                <Bar dataKey="conCarga" stackId="a" fill="#00b894" name="Con Carga" />
+                <Bar dataKey="sinCarga" stackId="a" fill="#d63031" name="Sin Carga" />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+
+        </section>
+      </div>
+    </>
+  );
+};
+
+export default DashboardTTHH;

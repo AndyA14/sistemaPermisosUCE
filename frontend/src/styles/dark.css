@@ -1,0 +1,43 @@
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-text: #e0e0e0;
+    --color-bg: #121212;
+    --color-border: #2c2c2c;
+    --color-input-bg: #1e1e1e;
+    --color-header-bg: #1f1f1f;
+    --color-header-text: #ffffff;
+    --card-bg: #1a1a1a;
+    --icon-color: #aaa;
+
+    --color-muted: #888;
+    --color-success: #38d9a9;
+    --color-success-dark: #20c997;
+    --color-danger: #ff6b6b;
+    --color-danger-dark: #fa5252;
+    --color-warning: #ffa94d;
+    --color-warning-dark: #ff922b;
+    --color-info: #339af0;
+    --color-info-dark: #228be6;
+    --color-disabled: #3a3a3a;
+
+    --modal-bg-fondo: rgba(0, 0, 0, 0.75);
+    --modal-bg-contenido: var(--card-bg);
+    --modal-text-color: var(--color-text);
+    --modal-heading-color: #4dabf7;
+    --modal-muted-color: #aaa;
+  }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-track {
+    background: var(--color-bg);
+  }
+  ::-webkit-scrollbar-thumb {
+    background-color: var(--color-muted);
+    border-radius: 10px;
+    border: 2px solid var(--color-bg);
+  }
+}

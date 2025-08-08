@@ -1,0 +1,275 @@
+/* =====================================================
+   PERMISO CONTAINER - Layout dividido en 2 columnas
+   ===================================================== */
+
+.permiso-container {
+  display: flex;
+  gap: var(--spacing-xl);
+  padding: var(--spacing-xl);
+  max-width: 1600px;
+  margin: var(--spacing-md) auto;
+  background-color: var(--color-bg);
+  color: var(--color-text);
+  box-sizing: border-box;
+  flex-wrap: wrap; /* Para mejor responsive */
+}
+
+/* Columna izquierda - Formulario */
+.permiso-form {
+  flex: 1 1 400px; /* flexible pero mínimo 400px */
+  min-width: 300px;
+  box-sizing: border-box;
+}
+
+/* Columna derecha - Carta Preview */
+.preview-carta {
+  flex: 1 1 400px;
+  min-width: 300px;
+  box-sizing: border-box;
+}
+
+/* Título */
+.permiso-container h2 {
+  width: 100%;
+  text-align: center;
+  margin-bottom: var(--spacing-lg);
+  font-size: 1.75rem;
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text);
+}
+
+/* Etiquetas del formulario */
+.permiso-form label {
+  display: block;
+  margin-top: var(--spacing-md);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text);
+}
+
+/* Campos de entrada */
+.permiso-form input,
+.permiso-form select,
+.permiso-form textarea {
+  width: 100%;
+  padding: 0.65rem 1rem;
+  margin-top: 0.3rem;
+  font-size: 1rem;
+  background-color: var(--color-input-bg);
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  box-sizing: border-box;
+  transition: border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+  font-family: var(--font-family);
+}
+
+.permiso-form input:focus,
+.permiso-form select:focus,
+.permiso-form textarea:focus {
+  border-color: var(--btn-crear-bg);
+  box-shadow: 0 0 6px var(--btn-crear-bg);
+  outline: none;
+}
+
+/* Área de texto */
+.permiso-form textarea {
+  resize: vertical;
+  min-height: 100px;
+}
+
+/* Checkbox en línea */
+.permiso-form .checkbox-inline {
+  display: flex;
+  align-items: center;
+  margin-top: var(--spacing-sm);
+  gap: var(--spacing-xs);
+  color: var(--color-text);
+  font-family: var(--font-family);
+}
+
+/* Botón de enviar */
+.permiso-form button {
+  margin-top: var(--spacing-lg);
+  background-color: var(--btn-crear-bg);
+  color: var(--button-text-color);
+  padding: 0.75rem 1.5rem;
+  font-size: 1rem;
+  font-weight: var(--font-weight-bold);
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+  font-family: var(--font-family);
+}
+
+.permiso-form button:hover:enabled,
+.permiso-form button:focus:enabled {
+  background-color: #0071bc;
+  box-shadow: 0 0 8px #0071bc;
+  outline: none;
+}
+
+.permiso-form button:disabled {
+  background-color: var(--color-disabled);
+  cursor: not-allowed;
+  color: var(--color-bg);
+  box-shadow: none;
+}
+
+/* Responsive para pantallas pequeñas */
+@media (max-width: 768px) {
+  .permiso-container {
+    flex-direction: column;
+    padding: var(--spacing-lg);
+    gap: var(--spacing-lg);
+  }
+
+  .permiso-form,
+  .preview-carta {
+    flex: 1 1 100%;
+    min-width: auto;
+  }
+}
+
+/* Logo institución */
+.logo-institucion {
+  display: block;
+  max-width: 120px;
+  height: auto;
+  margin-bottom: 1.5rem;
+  align-self: center; /* Centrar horizontalmente */
+}
+
+/* =====================================================
+   MODAL PARA PREVIEW CARTA
+   ===================================================== */
+
+/* Fondo del modal: cubre toda la pantalla con fondo semitransparente */
+.modal-fondo {
+  position: fixed;
+  inset: 0;
+  background-color: var(--modal-bg-fondo);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1050;
+}
+
+/* Contenido del modal: caja centrada con scroll vertical */
+.preview-carta {
+  width: 90%;
+  max-width: 800px; /* Aproximado a 21cm en pantalla */
+  height: 90%;
+  min-height: 789px; /* Altura mínima de un A4 */
+  padding: 1.3cm 2cm; /* Márgenes similares a documento impreso */
+  border-radius: var(--modal-border-radius);
+  font-family: var(--modal-font-family);
+  box-shadow: var(--modal-box-shadow);
+  overflow-y: auto;
+  color: var(--modal-text-color);
+  line-height: var(--modal-line-height);
+  text-align: center;
+  margin: auto;
+  box-sizing: border-box;
+  background: white; /* Simula papel */
+}
+
+/* Encabezado con estilo destacado y mayúsculas */
+.carta-encabezado {
+  font-weight: 600;
+  color: var(--modal-heading-color);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 2rem;
+}
+
+.carta-encabezado p {
+  margin: 0.15rem 0;
+}
+
+/* Fecha alineada a la derecha, tamaño medio */
+.fecha-derecha {
+  text-align: right;
+  margin-bottom: 1.8rem;
+  font-size: 1rem;
+  font-weight: 500;
+  color: var(--modal-muted-color);
+}
+
+/* Destinatario alineado a la izquierda, line-height compacto */
+.destinatario-derecha {
+  text-align: left;
+  margin-bottom: 1.8rem;
+  font-size: 1rem;
+  line-height: 1.3;
+  color: var(--modal-text-color);
+}
+
+.destinatario-derecha p {
+  margin: 0.12rem 0;
+}
+
+/* Saludo alineado a la izquierda y con peso destacado */
+.saludo {
+  font-weight: 600;
+  margin-bottom: 1.5rem;
+  text-align: left;
+}
+
+/* Contenido justificado para texto legible */
+.contenido-justificado {
+  text-align: justify;
+  margin: 0.9rem 0;
+  font-size: 1rem;
+  max-width: 100%;
+  overflow-wrap: break-word;    /* Fuerza quiebre dentro de palabras largas */
+  word-wrap: break-word;        /* Compatibilidad */
+  word-break: break-word;       /* Palabras muy largas */
+  hyphens: auto;                /* Divide palabras con guiones si aplica */
+}
+
+/* Agradecimiento alineado a la izquierda con estilo cursiva */
+.agradecimiento-derecha {
+  text-align: left;
+  margin-top: 2rem;
+  font-style: italic;
+  font-size: 1rem;
+  color: var(--modal-italic-color);
+}
+
+/* Firma alineada a la izquierda con margen superior */
+.firma-derecha {
+  text-align: left;
+  font-size: 1rem;
+  font-weight: 400;
+  color: var(--modal-italic-color);
+}
+
+.firma-derecha p {
+  font-size: 1rem;
+  margin: 0.15rem 0;
+}
+
+.firma-derecha strong {
+  font-size: 1.1rem;
+}
+
+/* Botón cerrar modal */
+.btn-cerrar {
+  margin-top: 3rem;
+  background-color: #004080;
+  color: #fff;
+  padding: 0.6rem 1.2rem;
+  font-size: 1rem;
+  font-weight: 600;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.btn-cerrar:hover,
+.btn-cerrar:focus {
+  background-color: #002e5b;
+  outline: none;
+}

@@ -1,0 +1,114 @@
+.loading-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: var(--modal-bg-fondo);
+  z-index: var(--z-modal);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  transition: var(--theme-transition);
+}
+
+.loading-box {
+  background-color: var(--modal-bg-contenido);
+  color: var(--modal-text-color);
+  padding: var(--spacing-2xl) var(--spacing-3xl);
+  border-radius: var(--modal-border-radius);
+  text-align: center;
+  box-shadow: var(--modal-box-shadow);
+  font-weight: var(--font-weight-semibold);
+  font-size: var(--font-size-lg);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-lg);
+  align-items: center;
+  border: 1px solid var(--color-border-primary);
+  transition: var(--theme-transition);
+  min-width: 200px;
+}
+
+.spinner {
+  border: 4px solid var(--color-border-primary);
+  border-top: 4px solid var(--color-primary-500);
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  animation: spin 0.9s linear infinite;
+  transition: var(--theme-transition);
+}
+
+/* Versión más grande del spinner para mejor visibilidad */
+.loading-box .spinner {
+  width: 48px;
+  height: 48px;
+  border-width: 5px;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Estados específicos para modo oscuro */
+[data-theme="dark"] .loading-overlay {
+  background-color: rgba(0, 0, 0, 0.8);
+}
+
+[data-theme="dark"] .loading-box {
+  background-color: var(--color-bg-elevated);
+  color: var(--color-text-primary);
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+}
+
+[data-theme="dark"] .spinner {
+  border-color: var(--color-gray-600);
+  border-top-color: var(--color-primary-400);
+}
+
+/* Animación de entrada suave */
+.loading-overlay {
+  animation: fadeIn 0.2s ease-out;
+}
+
+.loading-box {
+  animation: slideIn 0.3s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .loading-box {
+    padding: var(--spacing-xl) var(--spacing-2xl);
+    font-size: var(--font-size-base);
+    min-width: 180px;
+  }
+
+  .loading-box .spinner {
+    width: 36px;
+    height: 36px;
+    border-width: 4px;
+  }
+}

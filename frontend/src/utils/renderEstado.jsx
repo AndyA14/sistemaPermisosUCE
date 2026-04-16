@@ -17,22 +17,22 @@ export function renderEstado(estado_general) {
   switch (estado_general.toLowerCase()) {
     case 'pendiente':
       clase = 'estado-pendiente';
-      texto = 'Pendiente';
+      texto = ' Pendiente';
       break;
     case 'autorizado':
     case 'aprobado':
       clase = 'estado-aprobado';
-      texto = 'Aprobado';
+      texto = ' Aprobado';
       break;
     case 'en_revision':
     case 'en revisión':
       clase = 'estado-en-revision';
-      texto = 'En Revisión';
+      texto = ' En Revisión';
       break;
     case 'denegado':
     case 'rechazado':
       clase = 'estado-rechazado';
-      texto = 'Rechazado';
+      texto = ' Rechazado';
       break;
     default:
       clase = 'estado-otro';

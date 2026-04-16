@@ -177,6 +177,9 @@ function PermisosForm() {
           line-height: 1.6;
           background-color: #ffffff;
         }
+        .modal-contenido1 {
+          color: #2c3e50;
+        }
         .logo-institucion {
           display: block;
           max-width: 120px;
@@ -185,6 +188,7 @@ function PermisosForm() {
         .carta-encabezado {
           font-family: "Times New Roman", Times, serif;
           font-weight: 600;
+          color: #2c3e50;
           text-transform: uppercase;
           letter-spacing: 0.06em;
           text-align: center;

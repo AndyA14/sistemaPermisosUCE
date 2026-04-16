@@ -163,12 +163,12 @@
   min-height: 789px; /* Altura mínima de un A4 */
   padding: 1.3cm 2cm; /* Márgenes similares a documento impreso */
   border-radius: var(--modal-border-radius);
-  font-family: var(--modal-font-family);
+  font-family: "Times New Roman", Times, serif;
   box-shadow: var(--modal-box-shadow);
   overflow-y: auto;
-  color: var(--modal-text-color);
-  line-height: var(--modal-line-height);
-  text-align: center;
+  color: #2c3e50; /* Texto oscuro y legible */
+  line-height: 1.6;
+  text-align: left;
   margin: auto;
   box-sizing: border-box;
   background: white; /* Simula papel */
@@ -177,7 +177,7 @@
 /* Encabezado con estilo destacado y mayúsculas */
 .carta-encabezado {
   font-weight: 600;
-  color: var(--modal-heading-color);
+  color: #2c3e50;
   text-transform: uppercase;
   letter-spacing: 0.06em;
   margin-bottom: 2rem;
@@ -193,7 +193,7 @@
   margin-bottom: 1.8rem;
   font-size: 1rem;
   font-weight: 500;
-  color: var(--modal-muted-color);
+  color: #2c3e50;
 }
 
 /* Destinatario alineado a la izquierda, line-height compacto */
@@ -202,7 +202,7 @@
   margin-bottom: 1.8rem;
   font-size: 1rem;
   line-height: 1.3;
-  color: var(--modal-text-color);
+  color: #2c3e50;
 }
 
 .destinatario-derecha p {
@@ -214,6 +214,7 @@
   font-weight: 600;
   margin-bottom: 1.5rem;
   text-align: left;
+  color: #2c3e50;
 }
 
 /* Contenido justificado para texto legible */
@@ -234,7 +235,7 @@
   margin-top: 2rem;
   font-style: italic;
   font-size: 1rem;
-  color: var(--modal-italic-color);
+  color: #2c3e50;
 }
 
 /* Firma alineada a la izquierda con margen superior */
@@ -242,7 +243,7 @@
   text-align: left;
   font-size: 1rem;
   font-weight: 400;
-  color: var(--modal-italic-color);
+  color: #2c3e50;
 }
 
 .firma-derecha p {

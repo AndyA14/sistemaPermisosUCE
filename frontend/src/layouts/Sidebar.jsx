@@ -1,324 +1,257 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
-import { 
-  HiOutlineClipboardList,
-  HiOutlineDocumentText,
-  HiOutlineEye,
-  HiOutlinePlus,
-  HiOutlineUserGroup,
-  HiOutlineChartBar,
-  HiOutlineCheckCircle,
-  HiOutlineUsers,
-  HiOutlineHome,
-  HiOutlineClipboard,
-  HiOutlineSearch,
-  HiOutlineCog,
-  HiOutlineTrendingUp,
-  HiOutlineUser,
-  HiOutlineDocument
+import {
+  HiOutlineDocumentText, HiOutlineEye, HiOutlinePlus, HiOutlineUserGroup,
+  HiOutlineChartBar, HiOutlineCheckCircle, HiOutlineUsers, HiOutlineHome,
+  HiOutlineClipboard, HiOutlineSearch, HiOutlineCog, HiOutlineTrendingUp,
+  HiOutlineUser, HiOutlineDocument
 } from 'react-icons/hi';
-import '../styles/layouts/Sidebar.css';
+import { MdExpandMore, MdExpandLess } from 'react-icons/md';
+
+// 📦 Importaciones de Material UI
+import {
+  Drawer, List, ListItem, ListItemButton, ListItemIcon, ListItemText,
+  Collapse, Tooltip, Divider, Box, Menu, MenuItem, useTheme
+} from '@mui/material';
+
+// ❌ Borramos la importación de Sidebar.css
+
+const drawerWidth = 260;
+const collapsedDrawerWidth = 70;
 
 function Sidebar({ rol, isCollapsed }) {
   const { pathname } = useLocation();
   const navigate = useNavigate();
-  
-  const [menuOpen, setMenuOpen] = useState({
+  const theme = useTheme();
+
+  // Estado para los submenús normales (cuando NO está colapsado)
+  const [openSubMenus, setOpenSubMenus] = useState({
     permisos: false,
     dashboard: false,
     tthh: false,
     dtic: false,
   });
 
-  // Estado para el menú flotante cuando está colapsado
-  const [floatingMenu, setFloatingMenu] = useState({
-    isOpen: false,
-    menu: null,
-    position: { top: 0, left: 0 }
-  });
-
-  const toggleMenu = (menu, event) => {
-    if (isCollapsed) {
-      // Mostrar menú flotante
-      const rect = event.currentTarget.getBoundingClientRect();
-      setFloatingMenu({
-        isOpen: !floatingMenu.isOpen || floatingMenu.menu !== menu,
-        menu: menu,
-        position: { 
-          top: rect.top, 
-          left: rect.right + 10 
-        }
-      });
-      return;
-    }
-    setMenuOpen(prev => ({ ...prev, [menu]: !prev[menu] }));
-  };
-
-  // Cerrar todos los menús cuando se colapsa
-  useEffect(() => {
-    if (isCollapsed) {
-      setMenuOpen({
-        permisos: false,
-        dashboard: false,
-        tthh: false,
-        dtic: false,
-      });
-    } else {
-      setFloatingMenu({ isOpen: false, menu: null, position: { top: 0, left: 0 } });
-    }
-  }, [isCollapsed]);
-
-  // Cerrar menú flotante al hacer clic fuera
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (floatingMenu.isOpen && !event.target.closest('.floating-menu') && !event.target.closest('.sidebar-link')) {
-        setFloatingMenu({ isOpen: false, menu: null, position: { top: 0, left: 0 } });
-      }
-    };
-
-    if (floatingMenu.isOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-    }
-    
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, [floatingMenu.isOpen]);
-
-  const handleFloatingMenuClick = (route) => {
-    navigate(route);
-    setFloatingMenu({ isOpen: false, menu: null, position: { top: 0, left: 0 } });
-  };
-
-  const isActivePath = (path) => pathname.startsWith(path);
+  // Estado para los menús flotantes (cuando SÍ está colapsado)
+  const [anchorEl, setAnchorEl] = useState(null);
+  const [activeFloatMenu, setActiveFloatMenu] = useState(null);
 
   const permisosRoles = ['docente', 'director', 'tthh', 'dti', 'admin'];
   const dashboardRoles = ['director', 'admin'];
   const tthhRoles = ['tthh', 'admin'];
   const dticRoles = ['dti', 'admin'];
 
-  // Configuración de menús para el floating menu
-  const menuConfig = {
-    permisos: [
-      { route: '/permisos/ver', icon: HiOutlineEye, text: 'Consultar Solicitudes' },
-      { route: '/permisos/crear', icon: HiOutlinePlus, text: 'Nueva Solicitud' }
-    ],
-    dashboard: [
-      { route: '/dashboard/resumen', icon: HiOutlineChartBar, text: 'Estadísticas de Solicitudes' },
-      { route: '/dashboard/dashboard', icon: HiOutlineCheckCircle, text: 'Solicitudes por Aprobar' }
-    ],
-    tthh: [
-      { route: '/listado-tthh/dashboard', icon: HiOutlineHome, text: 'Panel General' },
-      { route: '/listado-tthh/informes', icon: HiOutlineClipboard, text: 'Generar Informes' },
-      { route: '/listado-tthh/registro-solicitudes', icon: HiOutlineSearch, text: 'Revisión de Solicitudes' }
-    ],
-    dtic: [
-      { route: '/dtic/dashboard', icon: HiOutlineHome, text: 'Panel General' },
-      { route: '/dtic/informes', icon: HiOutlineTrendingUp, text: 'Generador de Reportes' },
-      { route: '/dtic/gestion-usuarios', icon: HiOutlineUser, text: 'Gestión de Usuarios' },
-      { route: '/dtic/tipo-permiso', icon: HiOutlineDocument, text: 'Tipos de Permiso' }
-    ]
+  const isActivePath = (path) => pathname.startsWith(path);
+
+  // Manejador principal de clics en los botones del menú padre
+  const handleParentClick = (menuId, event) => {
+    if (isCollapsed) {
+      // Si está colapsado, abrimos el menú flotante de MUI
+      setAnchorEl(event.currentTarget);
+      setActiveFloatMenu(menuId);
+    } else {
+      // Si está expandido, abrimos el Collapse de MUI
+      setOpenSubMenus(prev => ({ ...prev, [menuId]: !prev[menuId] }));
+    }
   };
 
+  const closeFloatMenu = () => {
+    setAnchorEl(null);
+    setActiveFloatMenu(null);
+  };
+
+  const handleNavigate = (path) => {
+    navigate(path);
+    closeFloatMenu();
+  };
+
+  // Definición estructurada del menú para construirlo dinámicamente
+  const menuConfig = [
+    {
+      id: 'permisos',
+      title: 'Mis Permisos',
+      icon: <HiOutlineDocumentText size={24} />,
+      roles: permisosRoles,
+      pathMatch: '/permisos',
+      children: [
+        { title: 'Consultar Solicitudes', path: '/permisos/ver', icon: <HiOutlineEye size={20} /> },
+        { title: 'Nueva Solicitud', path: '/permisos/crear', icon: <HiOutlinePlus size={20} /> },
+      ]
+    },
+    {
+      id: 'dashboard',
+      title: 'Gestión Directiva',
+      icon: <HiOutlineUserGroup size={24} />,
+      roles: dashboardRoles,
+      pathMatch: '/dashboard',
+      children: [
+        { title: 'Estadísticas de Solicitudes', path: '/dashboard/resumen', icon: <HiOutlineChartBar size={20} /> },
+        { title: 'Solicitudes por Aprobar', path: '/dashboard/dashboard', icon: <HiOutlineCheckCircle size={20} /> },
+      ]
+    },
+    {
+      id: 'tthh',
+      title: 'Talento Humano',
+      icon: <HiOutlineUsers size={24} />,
+      roles: tthhRoles,
+      pathMatch: '/listado-tthh',
+      children: [
+        { title: 'Panel General', path: '/listado-tthh/dashboard', icon: <HiOutlineHome size={20} /> },
+        { title: 'Generar Informes', path: '/listado-tthh/informes', icon: <HiOutlineClipboard size={20} /> },
+        { title: 'Revisión de Solicitudes', path: '/listado-tthh/registro-solicitudes', icon: <HiOutlineSearch size={20} /> },
+      ]
+    },
+    {
+      id: 'dtic',
+      title: 'Administración del Sistema',
+      icon: <HiOutlineCog size={24} />,
+      roles: dticRoles,
+      pathMatch: '/dtic',
+      children: [
+        { title: 'Panel General', path: '/dtic/dashboard', icon: <HiOutlineHome size={20} /> },
+        { title: 'Generador de Reportes', path: '/dtic/informes', icon: <HiOutlineTrendingUp size={20} /> },
+        { title: 'Gestión de Usuarios', path: '/dtic/gestion-usuarios', icon: <HiOutlineUser size={20} /> },
+        { title: 'Tipos de Permiso', path: '/dtic/tipo-permiso', icon: <HiOutlineDocument size={20} /> },
+      ]
+    }
+  ];
+
   return (
-    <aside className={`sidebar ${isCollapsed ? 'sidebar-collapsed' : ''}`}>
-      <ul className="sidebar-menu">
+    <>
+      <Drawer
+        variant="permanent"
+        sx={{
+          width: isCollapsed ? collapsedDrawerWidth : drawerWidth,
+          flexShrink: 0,
+          whiteSpace: 'nowrap',
+          boxSizing: 'border-box',
+          '& .MuiDrawer-paper': {
+            width: isCollapsed ? collapsedDrawerWidth : drawerWidth,
+            transition: theme.transitions.create('width', {
+              easing: theme.transitions.easing.sharp,
+              duration: theme.transitions.duration.enteringScreen,
+            }),
+            overflowX: 'hidden',
+            borderRight: '1px solid',
+            borderColor: 'divider',
+            position: 'relative', // Para que no se ponga encima del header
+            bgcolor: 'background.paper',
+          },
+        }}
+      >
+        <List sx={{ pt: 2 }}>
+          {menuConfig.filter(section => section.roles.includes(rol)).map((section) => {
+            const isSectionActive = isActivePath(section.pathMatch);
+            const isExpanded = openSubMenus[section.id] && !isCollapsed;
 
-        {/* 🟢 Menú de Permisos (para la mayoría de usuarios) */}
-        {permisosRoles.includes(rol) && (
-          <li className="sidebar-menu-item">
-            <div
-              className={`sidebar-link ${isActivePath('/permisos') ? 'active' : ''}`}
-              onClick={(e) => toggleMenu('permisos', e)}
-              title={isCollapsed ? 'Mis Permisos - Clic para ver opciones' : ''}
-            >
-              <HiOutlineDocumentText className="sidebar-icon" />
-              {!isCollapsed && (
-                <>
-                  <span className="sidebar-text">Mis Permisos</span>
-                  <span className={`dropdown-arrow ${menuOpen.permisos ? 'open' : ''}`}>▾</span>
-                </>
-              )}
-            </div>
-            {menuOpen.permisos && !isCollapsed && (
-              <ul className="submenu">
-                <li>
-                  <NavLink to="/permisos/ver" className="sidebar-link">
-                    <HiOutlineEye className="sidebar-icon" />
-                    <span className="sidebar-text">Consultar Solicitudes</span>
-                  </NavLink>
-                </li>
-                <li>
-                  <NavLink to="/permisos/crear" className="sidebar-link">
-                    <HiOutlinePlus className="sidebar-icon" />
-                    <span className="sidebar-text">Nueva Solicitud</span>
-                  </NavLink>
-                </li>
-              </ul>
-            )}
-          </li>
-        )}
+            return (
+              <Box key={section.id}>
+                {/* Botón Padre */}
+                <Tooltip title={isCollapsed ? section.title : ''} placement="right">
+                  <ListItem disablePadding sx={{ display: 'block', mb: 0.5 }}>
+                    <ListItemButton
+                      onClick={(e) => handleParentClick(section.id, e)}
+                      sx={{
+                        minHeight: 48,
+                        justifyContent: isCollapsed ? 'center' : 'initial',
+                        px: 2.5,
+                        mx: 1,
+                        borderRadius: 2,
+                        bgcolor: isSectionActive ? 'action.selected' : 'transparent',
+                        color: isSectionActive ? 'primary.main' : 'text.primary',
+                        '&:hover': { bgcolor: 'action.hover' }
+                      }}
+                    >
+                      <ListItemIcon
+                        sx={{
+                          minWidth: 0,
+                          mr: isCollapsed ? 0 : 2,
+                          justifyContent: 'center',
+                          color: isSectionActive ? 'primary.main' : 'inherit',
+                        }}
+                      >
+                        {section.icon}
+                      </ListItemIcon>
+                      <ListItemText 
+                        primary={section.title} 
+                        sx={{ opacity: isCollapsed ? 0 : 1, m: 0 }} 
+                        primaryTypographyProps={{ fontWeight: isSectionActive ? 'bold' : 'medium' }}
+                      />
+                      {!isCollapsed && (
+                         isExpanded ? <MdExpandLess /> : <MdExpandMore />
+                      )}
+                    </ListItemButton>
+                  </ListItem>
+                </Tooltip>
 
-        {/* 🔵 Menú para Directores */}
-        {dashboardRoles.includes(rol) && (
-          <li className="sidebar-menu-item">
-            <div
-              className={`sidebar-link ${isActivePath('/dashboard') ? 'active' : ''}`}
-              onClick={(e) => toggleMenu('dashboard', e)}
-              title={isCollapsed ? 'Gestión Directiva - Clic para ver opciones' : ''}
-            >
-              <HiOutlineUserGroup className="sidebar-icon" />
-              {!isCollapsed && (
-                <>
-                  <span className="sidebar-text">Gestión Directiva</span>
-                  <span className={`dropdown-arrow ${menuOpen.dashboard ? 'open' : ''}`}>▾</span>
-                </>
-              )}
-            </div>
-            {menuOpen.dashboard && !isCollapsed && (
-              <ul className="submenu">
-                <li>
-                  <NavLink to="/dashboard/resumen" className="sidebar-link">
-                    <HiOutlineChartBar className="sidebar-icon" />
-                    <span className="sidebar-text">Estadísticas de Solicitudes</span>
-                  </NavLink>
-                </li>
-                <li>
-                  <NavLink to="/dashboard/dashboard" className="sidebar-link">
-                    <HiOutlineCheckCircle className="sidebar-icon" />
-                    <span className="sidebar-text">Solicitudes por Aprobar</span>
-                  </NavLink>
-                </li>
-              </ul>
-            )}
-          </li>
-        )}
+                {/* Submenú Normal (Collapse) - Solo visible si NO está colapsado */}
+                {!isCollapsed && (
+                  <Collapse in={isExpanded} timeout="auto" unmountOnExit>
+                    <List component="div" disablePadding>
+                      {section.children.map((child) => (
+                        <ListItemButton
+                          key={child.path}
+                          component={NavLink}
+                          to={child.path}
+                          sx={{
+                            pl: 6, // Identación para hijos
+                            py: 1,
+                            mx: 1,
+                            borderRadius: 2,
+                            color: pathname === child.path ? 'primary.main' : 'text.secondary',
+                            bgcolor: pathname === child.path ? 'primary.light' : 'transparent',
+                            '&.active': { bgcolor: 'action.selected', color: 'primary.main', fontWeight: 'bold' }
+                          }}
+                        >
+                          <ListItemIcon sx={{ minWidth: 30, color: 'inherit' }}>
+                            {child.icon}
+                          </ListItemIcon>
+                          <ListItemText 
+                            primary={child.title} 
+                            primaryTypographyProps={{ fontSize: '0.9rem' }}
+                          />
+                        </ListItemButton>
+                      ))}
+                    </List>
+                  </Collapse>
+                )}
+              </Box>
+            );
+          })}
+        </List>
+      </Drawer>
 
-        {/* 🟡 Menú para Talento Humano */}
-        {tthhRoles.includes(rol) && (
-          <li className="sidebar-menu-item">
-            <div
-              className={`sidebar-link ${isActivePath('/listado-tthh') ? 'active' : ''}`}
-              onClick={(e) => toggleMenu('tthh', e)}
-              title={isCollapsed ? 'Talento Humano - Clic para ver opciones' : ''}
-            >
-              <HiOutlineUsers className="sidebar-icon" />
-              {!isCollapsed && (
-                <>
-                  <span className="sidebar-text">Talento Humano</span>
-                  <span className={`dropdown-arrow ${menuOpen.tthh ? 'open' : ''}`}>▾</span>
-                </>
-              )}
-            </div>
-            {menuOpen.tthh && !isCollapsed && (
-              <ul className="submenu">
-                <li>
-                  <NavLink to="/listado-tthh/dashboard" className="sidebar-link">
-                    <HiOutlineHome className="sidebar-icon" />
-                    <span className="sidebar-text">Panel General</span>
-                  </NavLink>
-                </li>
-                <li>
-                  <NavLink to="/listado-tthh/informes" className="sidebar-link">
-                    <HiOutlineClipboard className="sidebar-icon" />
-                    <span className="sidebar-text">Generar Informes</span>
-                  </NavLink>
-                </li>
-                <li>
-                  <NavLink to="/listado-tthh/registro-solicitudes" className="sidebar-link">
-                    <HiOutlineSearch className="sidebar-icon" />
-                    <span className="sidebar-text">Revisión de Solicitudes</span>
-                  </NavLink>
-                </li>
-              </ul>
-            )}
-          </li>
-        )}
-
-        {/* 🔴 Menú para DTIC / Admin */}
-        {dticRoles.includes(rol) && (
-          <li className="sidebar-menu-item">
-            <div
-              className={`sidebar-link ${isActivePath('/dtic') ? 'active' : ''}`}
-              onClick={(e) => toggleMenu('dtic', e)}
-              title={isCollapsed ? 'Administración - Clic para ver opciones' : ''}
-            >
-              <HiOutlineCog className="sidebar-icon" />
-              {!isCollapsed && (
-                <>
-                  <span className="sidebar-text">Administración del Sistema</span>
-                  <span className={`dropdown-arrow ${menuOpen.dtic ? 'open' : ''}`}>▾</span>
-                </>
-              )}
-            </div>
-            {menuOpen.dtic && !isCollapsed && (
-              <ul className="submenu">
-                <li>
-                  <NavLink to="/dtic/dashboard" className="sidebar-link">
-                    <HiOutlineHome className="sidebar-icon" />
-                    <span className="sidebar-text">Panel General</span>
-                  </NavLink>
-                </li>
-                <li>
-                  <NavLink to="/dtic/informes" className="sidebar-link">
-                    <HiOutlineTrendingUp className="sidebar-icon" />
-                    <span className="sidebar-text">Generador de Reportes</span>
-                  </NavLink>
-                </li>
-                <li>
-                  <NavLink to="/dtic/gestion-usuarios" className="sidebar-link">
-                    <HiOutlineUser className="sidebar-icon" />
-                    <span className="sidebar-text">Gestión de Usuarios</span>
-                  </NavLink>
-                </li>
-                <li>
-                  <NavLink to="/dtic/tipo-permiso" className="sidebar-link">
-                    <HiOutlineDocument className="sidebar-icon" />
-                    <span className="sidebar-text">Tipos de Permiso</span>
-                  </NavLink>
-                </li>
-              </ul>
-            )}
-          </li>
-        )}
-
-      </ul>
-
-      {/* Menú flotante para sidebar colapsado */}
-      {floatingMenu.isOpen && isCollapsed && (
-        <div 
-          className="floating-menu"
-          style={{
-            position: 'fixed',
-            top: floatingMenu.position.top,
-            left: floatingMenu.position.left,
-            zIndex: 1000
-          }}
-        >
-          <div className="floating-menu-content">
-            <h4 className="floating-menu-title">
-              {floatingMenu.menu === 'permisos' && 'Mis Permisos'}
-              {floatingMenu.menu === 'dashboard' && 'Gestión Directiva'}
-              {floatingMenu.menu === 'tthh' && 'Talento Humano'}
-              {floatingMenu.menu === 'dtic' && 'Administración del Sistema'}
-            </h4>
-            <ul className="floating-menu-list">
-              {menuConfig[floatingMenu.menu]?.map((item, index) => (
-                <li key={index}>
-                  <button
-                    className="floating-menu-item"
-                    onClick={() => handleFloatingMenuClick(item.route)}
-                  >
-                    <item.icon className="floating-menu-icon" />
-                    <span>{item.text}</span>
-                  </button>
-                </li>
-              ))}
-            </ul>
-          </div>
-        </div>
-      )}
-    </aside>
+      {/* Menú Flotante de MUI (Solo visible cuando el Sidebar ESTÁ colapsado) */}
+      <Menu
+        anchorEl={anchorEl}
+        open={Boolean(anchorEl) && isCollapsed}
+        onClose={closeFloatMenu}
+        anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
+        transformOrigin={{ vertical: 'top', horizontal: 'left' }}
+        PaperProps={{ elevation: 4, sx: { mt: -1, ml: 1, borderRadius: 2, minWidth: 200 } }}
+      >
+        <Box sx={{ px: 2, py: 1, bgcolor: 'action.hover' }}>
+          <ListItemText 
+            primary={menuConfig.find(m => m.id === activeFloatMenu)?.title} 
+            primaryTypographyProps={{ fontWeight: 'bold', color: 'primary.main' }}
+          />
+        </Box>
+        <Divider />
+        {menuConfig.find(m => m.id === activeFloatMenu)?.children.map((child) => (
+          <MenuItem 
+            key={child.path} 
+            onClick={() => handleNavigate(child.path)}
+            selected={pathname === child.path}
+            sx={{ py: 1.5 }}
+          >
+            <ListItemIcon sx={{ color: pathname === child.path ? 'primary.main' : 'inherit' }}>
+              {child.icon}
+            </ListItemIcon>
+            <ListItemText primary={child.title} />
+          </MenuItem>
+        ))}
+      </Menu>
+    </>
   );
 }
 

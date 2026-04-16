@@ -44,7 +44,7 @@ services:
       EMAIL_PERMISOS: correo+permisos@gmail.com
       EMAIL_DIRECTOR: correo+director@gmail.com
       EMAIL_SOPORTE: correo+soporte@gmail.com
-      EMAIL_PASSWORD: sgvx dfhz svnj rmzj
+      EMAIL_PASSWORD: sgvxdfhzsvnjrmzj
       IMAP_HOST: imap.gmail.com
       IMAP_PORT: 993
       IMAP_SECURE: "true"

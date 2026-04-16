@@ -79,13 +79,13 @@
   margin-right: var(--spacing-lg);
   object-fit: contain;
   border-radius: 8px;
-  box-shadow: 0 0 8px rgba(0, 0, 0, 0.1);
-  transition: box-shadow 0.3s ease;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+  transition: filter 0.3s ease;
 }
 
 .app-icon:hover,
 .app-icon:focus {
-  box-shadow: 0 0 12px var(--btn-crear-bg);
+  filter: drop-shadow(0 0 12px var(--btn-crear-bg));
   outline: none;
 }
 

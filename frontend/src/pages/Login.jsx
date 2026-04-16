@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { loginUsuario } from '../services/api';
 import { isAuthenticated, getRol, loginUsuarioT } from '../utils/auth';
-import { ToastContainer, toast } from 'react-toastify'; // <-- importar react-toastify
+import { ToastContainer, toast } from 'react-toastify';
 import LoadingModal from '../components/LoadingModal';
 import '../styles/Login.css';
 
@@ -11,23 +11,7 @@ function Login() {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
-  useEffect(() => {
-    const redirigirPorRol = (rol = '') => {
-      const rutaPorRol = {
-        docente: '/permisos/ver',
-        director: '/dashboard/resumen',
-        tthh: '/listado-tthh/dashboard',
-        dti: '/dtic/dashboard',
-        admin: '/permisos/ver',
-      };
-      navigate(rutaPorRol[rol.toLowerCase()] || '/unauthorized');
-    };
-
-    if (isAuthenticated()) {
-      redirigirPorRol(getRol());
-    }
-  }, [navigate]);
-
+  // === Función centralizada para redirigir según rol ===
   const redirigirPorRol = (rol = '') => {
     const rutaPorRol = {
       docente: '/permisos/ver',
@@ -39,21 +23,38 @@ function Login() {
     navigate(rutaPorRol[rol.toLowerCase()] || '/unauthorized');
   };
 
+  // === Si ya está autenticado, redirigir automáticamente ===
+  useEffect(() => {
+    if (isAuthenticated()) {
+      redirigirPorRol(getRol());
+    }
+  }, [navigate]);
+
+  // === Manejo de inputs controlados ===
   const handleInputChange = (e) => {
     setForm({ ...form, [e.target.id]: e.target.value });
   };
 
+  // === Envío del formulario ===
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true);
 
+    // Validación rápida
+    if (!form.username || !form.contrasena) {
+      toast.warn('Por favor, complete todos los campos', {
+        position: "top-center",
+        autoClose: 3000,
+      });
+      return;
+    }
+
+    setLoading(true);
     try {
       const data = await loginUsuario(form);
       loginUsuarioT(data.token);
       localStorage.setItem('rol', data.usuario.rol.toLowerCase());
       redirigirPorRol(data.usuario.rol);
     } catch (err) {
-      // Toast error
       toast.error(err.message || 'Error al iniciar sesión', {
         position: "top-center",
         autoClose: 5000,
@@ -94,7 +95,10 @@ function Login() {
               iconPath="M12 17a2 2 0 1 0 0-4 2 2 0 0 0 0 4zm6-6h-1V9a5 5 0 0 0-10 0v2H6a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7a2 2 0 0 0-2-2zM8 9a4 4 0 0 1 8 0v2H8V9z"
             />
 
-            <button type="submit">Ingresar</button>
+            {/* Botón dinámico: se deshabilita y cambia el texto en loading */}
+            <button type="submit" disabled={loading}>
+              {loading ? "Ingresando..." : "Ingresar"}
+            </button>
 
             <div className="forgot-password-link">
               <Link to="/solicitar-reset">¿Olvidó su contraseña?</Link>
@@ -102,13 +106,17 @@ function Login() {
           </form>
         </div>
       </div>
-      {/* Contenedor global para mostrar los toasts */}
+
+      {/* Contenedor global para notificaciones */}
       <ToastContainer />
+      
+      {/* Modal de carga */}
       <LoadingModal visible={loading} />
     </div>
   );
 }
 
+// === Componente Input con Icono (reutilizable) ===
 function InputConIcono({ id, label, type, placeholder, value, onChange, iconPath }) {
   return (
     <div className="form-group">

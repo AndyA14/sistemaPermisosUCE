@@ -5,6 +5,17 @@ const { procesarCorreosYPermisosPorRol } = require('./correosUnificados.service'
 require('dotenv').config();
 
 /**
+ * Crear transportador SMTP reutilizable.
+ */
+const transporter = nodemailer.createTransport({
+  service: 'gmail',
+  auth: {
+    user: process.env.EMAIL_ADDRESS,
+    pass: process.env.EMAIL_PASSWORD,
+  },
+});
+
+/**
  * Envía un correo electrónico con opción de adjuntar archivos.
  * @param {Object} options
  * @param {string} options.to - Destinatario(s)
@@ -15,16 +26,8 @@ require('dotenv').config();
  */
 async function enviarCorreo({ to, subject, text = '', html = '', attachments = [] }) {
   try {
-    // Crear transportador SMTP
-    const transporter = nodemailer.createTransport({
-      service: 'gmail',
-      auth: {
-        user: process.env.EMAIL_ADDRESS,
-        pass: process.env.EMAIL_PASSWORD,
-      },
-    });
+    if (!to) throw new Error("No se proporcionó destinatario");
 
-    // Opciones del correo
     const mailOptions = {
       from: `"Sistema de Permisos" <${process.env.EMAIL_ADDRESS}>`,
       to,
@@ -34,12 +37,13 @@ async function enviarCorreo({ to, subject, text = '', html = '', attachments = [
       attachments,
     };
 
-    // Enviar correo
     const info = await transporter.sendMail(mailOptions);
     console.log('✅ Correo enviado:', info.messageId);
+    return info;
+
   } catch (error) {
-    // Log del error sin interrumpir la aplicación
     console.error('❌ Error al enviar correo:', error);
+    throw error; // Propagar para que la capa superior pueda manejarlo
   }
 }
 
@@ -54,7 +58,7 @@ async function obtenerCorreosPorAlias(alias) {
 }
 
 /**
- * Procesa correos y permisos unificados para un alias.
+ * Procesa correos y permisos unificados para un alias (TTHH).
  * @param {string} alias 
  * @returns {Promise<object>} resultado procesado
  */
@@ -63,7 +67,7 @@ async function obtenerCorreosUnificadosTTHH(alias = 'director') {
 }
 
 /**
- * Procesa correos y permisos unificados para un alias.
+ * Procesa correos y permisos unificados para un alias (Director).
  * @param {string} alias 
  * @returns {Promise<object>} resultado procesado
  */
@@ -71,4 +75,9 @@ async function obtenerCorreosUnificadosDirector(alias = 'director') {
   return await procesarCorreosYPermisosPorRol(alias, true);
 }
 
-module.exports = { enviarCorreo, obtenerCorreosPorAlias, obtenerCorreosUnificadosTTHH, obtenerCorreosUnificadosDirector };
+module.exports = {
+  enviarCorreo,
+  obtenerCorreosPorAlias,
+  obtenerCorreosUnificadosTTHH,
+  obtenerCorreosUnificadosDirector
+};

@@ -8,61 +8,68 @@
   background-color: var(--color-bg);
   color: var(--color-text);
   font-family: var(--font-family, 'Segoe UI', sans-serif);
+  line-height: 1.5;
 }
 
+/* =========================================
+   SECCIÓN IZQUIERDA - BACKGROUND DECORATIVO
+========================================= */
 .login-form-section {
   flex: 1;
-  background-color: var(--color-header-bg); /* Azul oscuro */
-  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' version='1.1' xmlns:xlink='http://www.w3.org/1999/xlink' xmlns:svgjs='http://svgjs.dev/svgjs' width='1440' height='560' preserveAspectRatio='none' viewBox='0 0 1440 560'%3e%3cg mask='url(%26quot%3b%23SvgjsMask1123%26quot%3b)' fill='none'%3e%3crect width='1440' height='560' x='0' y='0' fill='rgba(21%2c 67%2c 96%2c 1)'%3e%3c/rect%3e%3cpath d='M0%2c472.701C122.314%2c496.877%2c254.915%2c627.082%2c356.991%2c555.488C460.778%2c482.693%2c373.035%2c308.211%2c408.182%2c186.41C436.003%2c89.999%2c538.973%2c22.75%2c539.673%2c-77.593C540.402%2c-182.101%2c471.642%2c-271.173%2c411.97%2c-356.974C346.174%2c-451.581%2c289.872%2c-581.077%2c176.23%2c-600.184C61.056%2c-619.548%2c-19.789%2c-481.932%2c-131.655%2c-448.375C-242.496%2c-415.126%2c-394.139%2c-494.639%2c-469.207%2c-406.57C-544.456%2c-318.29%2c-466.382%2c-181.491%2c-457.745%2c-65.814C-451.114%2c22.995%2c-454.936%2c110.158%2c-424.378%2c193.807C-391.82%2c282.93%2c-355.813%2c378.162%2c-276.519%2c430.272C-196.978%2c482.545%2c-93.374%2c454.245%2c0%2c472.701' fill='%230e2c3e'%3e%3c/path%3e%3cpath d='M1440 938.0029999999999C1515.816 934.335 1597.9470000000001 946.081 1660.309 902.808 1722.103 859.929 1728.0810000000001 773.446 1768.529 710.034 1817.671 632.991 1938.696 580.586 1923.291 490.51300000000003 1907.743 399.601 1769.795 395.845 1703.78 331.43399999999997 1645.877 274.938 1636.456 174.377 1563.485 139.449 1488.351 103.48599999999999 1399.673 127.30200000000002 1318.776 147.151 1234.786 167.75900000000001 1139.185 185.42899999999997 1089.011 255.86700000000002 1039.409 325.502 1079.5439999999999 421.902 1063.28 505.836 1045.8310000000001 595.889 960.7909999999999 678.521 990.2850000000001 765.3779999999999 1019.5899999999999 851.6759999999999 1120.467 892.148 1205.552 924.808 1280.137 953.438 1360.202 941.863 1440 938.0029999999999' fill='%231c5a82'%3e%3c/path%3e%3c/g%3e%3cdefs%3e%3cmask id='SvgjsMask1123'%3e%3crect width='1440' height='560' fill='white'%3e%3c/rect%3e%3c/mask%3e%3c/defs%3e%3c/svg%3e");
+  background-color: var(--color-header-bg);
+  background-image: var(--login-bg-gradient, none);
   background-size: cover;
   background-position: center;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 2rem;
+  padding: clamp(1.5rem, 3vw, 2.5rem);
+  position: relative;
 }
 
 /* =========================================
    TARJETA DE LOGIN
 ========================================= */
 .login-card {
-  background-color: var(--card-bg, var(--color-bg));
+  background-color: var(--card-bg, rgba(255, 255, 255, 0.07));
+  backdrop-filter: blur(10px); /* efecto glass */
   color: var(--color-text);
-  padding: 3rem 2.5rem;
-  border-radius: 12px;
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+  padding: clamp(2rem, 4vw, 3rem);
+  border-radius: 14px;
+  box-shadow: var(--shadow-md, 0 6px 20px rgba(0, 0, 0, 0.2));
   max-width: 420px;
   width: 100%;
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
   animation: slideIn 0.6s ease;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.login-card:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-lg, 0 10px 25px rgba(0,0,0,0.25));
 }
 
 .login-card h2 {
   margin: 0 0 1.5rem;
   text-align: center;
-  font-size: 1.8rem;
+  font-size: clamp(1.5rem, 2vw, 1.8rem);
   color: var(--color-link);
-}
-
-.form-group label {
-  display: block;
-  margin-bottom: 0.5rem;
-  font-weight: 600;
-  font-size: 0.95rem;
 }
 
 /* =========================================
    INPUTS CON ICONOS
 ========================================= */
-
 .login-card .form-group {
-  margin-bottom: 1.5rem; /* Más espacio entre grupos */
+  margin-bottom: 1.2rem;
 }
 
-.login-card label {
-  margin-bottom: 0.8rem; /* Más espacio entre label e input */
+.form-group label {
+  display: block;
+  margin-bottom: 0.4rem;
+  font-weight: 600;
+  font-size: 0.95rem;
 }
 
 .input-with-icon {
@@ -79,13 +86,13 @@
   background-color: var(--color-input-bg);
   color: var(--color-text);
   font-size: 0.95rem;
-  transition: border-color 0.3s;
+  transition: border-color 0.25s, box-shadow 0.25s, background-color 0.3s;
 }
 
-.input-with-icon input:focus {
+.input-with-icon input:focus-visible {
   border-color: var(--color-link);
   outline: none;
-  box-shadow: var(--focus-box-shadow);
+  box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.35);
 }
 
 .input-with-icon svg {
@@ -95,17 +102,22 @@
   height: 1.2rem;
   fill: var(--icon-color);
   pointer-events: none;
+  transition: fill 0.3s;
+}
+
+.input-with-icon input:focus + svg {
+  fill: var(--color-link);
 }
 
 /* =========================================
    IMAGEN DE USUARIO
 ========================================= */
 .login-user-img {
-  width: 180px;
-  height: 180px;
-  object-fit: contain;
+  width: clamp(120px, 25vw, 180px);
+  height: clamp(120px, 25vw, 180px);
+  object-fit: cover;
   border-radius: 50%;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  box-shadow: var(--shadow-sm, 0 2px 8px rgba(0, 0, 0, 0.15));
   margin-bottom: 1rem;
 }
 
@@ -114,10 +126,8 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  gap: 0.8rem; /* espacio entre elementos internos */
+  gap: 0.8rem;
 }
-
 
 /* =========================================
    BOTÓN DE INGRESO
@@ -133,12 +143,22 @@
   font-size: 1rem;
   cursor: pointer;
   transition: background 0.3s ease;
+
+  /* 👇 centrado de texto y posibles iconos */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
 }
 
-.login-card button:hover,
-.login-card button:focus {
+.login-card button:hover {
   background: var(--color-link-hover);
-  outline: none;
+  transform: translateY(-1px);
+}
+
+.login-card button:focus-visible {
+  outline: 3px solid rgba(0, 123, 255, 0.4);
+  outline-offset: 2px;
 }
 
 /* =========================================
@@ -166,11 +186,13 @@
   color: var(--btn-editar-bg);
   font-size: 0.9rem;
   text-decoration: none;
+  transition: color 0.3s ease;
 }
 
 .forgot-password-link a:hover,
 .forgot-password-link a:focus {
   text-decoration: underline;
+  color: var(--color-link-hover);
 }
 
 /* =========================================
@@ -187,13 +209,20 @@
   }
 }
 
+/* Desactiva animaciones si el usuario lo prefiere */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
 /* =========================================
    RESPONSIVE
 ========================================= */
 @media (max-width: 768px) {
   .login-container {
     flex-direction: column;
-    align-items: center;
     padding: 1rem;
   }
 
@@ -204,17 +233,110 @@
   }
 
   .login-card {
-    padding: 2rem 1.5rem;
+    padding: 1.8rem 1.2rem;
     max-width: 100%;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    box-shadow: var(--shadow-sm, 0 4px 12px rgba(0, 0, 0, 0.15));
   }
+}
 
-  .login-user-img {
-    width: 140px;
-    height: 140px;
-  }
+/* =========================================
+   BOTONES EN FORMULARIOS
+========================================= */
+.button-group {
+  display: flex;
+  justify-content: space-between; /* Botones separados horizontalmente */
+  gap: 1rem; /* Espacio entre botones */
+  margin-top: 1.5rem;
+}
 
-  .login-card button {
-    font-size: 0.95rem;
+/* Botón principal (Login, Enviar enlace) */
+.button-group button[type="submit"] {
+  flex: 1; /* Ocupa el mismo ancho que el secundario */
+  padding: 0.9rem 1.2rem;
+  border: none;
+  border-radius: 8px;
+  background-color: var(--btn-crear-bg, var(--color-link));
+  color: var(--button-text-color);
+  font-weight: bold;
+  font-size: 1rem;
+  cursor: pointer;
+  text-align: center; /* Centra el texto */
+  transition: background 0.3s ease, transform 0.2s ease;
+}
+
+.button-group button[type="submit"]:hover,
+.button-group button[type="submit"]:focus {
+  background-color: var(--btn-crear-bg-hover, var(--color-link-hover));
+  outline: none;
+  transform: translateY(-1px);
+}
+
+/* Botón secundario "Atrás" */
+.button-group .btn-back {
+  flex: 1;
+  padding: 0.9rem 1.2rem;
+  border: 1px solid var(--color-border-primary);
+  border-radius: 8px;
+  background-color: var(--color-bg-secondary);
+  color: var(--color-text-primary);
+  font-weight: 500;
+  font-size: 1rem;
+  cursor: pointer;
+  text-align: center;
+  transition: background 0.3s, color 0.3s, border-color 0.3s, transform 0.2s;
+}
+
+.button-group .btn-back:hover,
+.button-group .btn-back:focus {
+  background-color: var(--color-bg-tertiary);
+  border-color: var(--color-link);
+  color: var(--color-link);
+  outline: none;
+  transform: translateY(-1px);
+}
+
+/* =========================================
+   INPUTS CON ICONOS
+========================================= */
+.input-with-icon input {
+  width: 100%;
+  padding: 0.8rem 0.8rem 0.8rem 2.5rem;
+  border: 1px solid var(--color-border-primary);
+  border-radius: 8px;
+  background-color: var(--color-bg-secondary);
+  color: var(--color-text-primary);
+  font-size: 0.95rem;
+  transition: border-color 0.3s, box-shadow 0.3s;
+}
+
+.input-with-icon input:focus {
+  border-color: var(--btn-crear-bg);
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(51,154,240,0.3);
+}
+
+/* =========================================
+   MENSAJES DE ERROR Y ÉXITO
+========================================= */
+.error-msg {
+  color: var(--color-danger);
+  text-align: center;
+  font-size: 0.85rem;
+  margin-top: 0.5rem;
+}
+
+.success-msg {
+  color: var(--color-success);
+  text-align: center;
+  font-size: 0.85rem;
+  margin-top: 0.5rem;
+}
+
+/* =========================================
+   RESPONSIVE
+========================================= */
+@media (max-width: 480px) {
+  .button-group {
+    flex-direction: column;
   }
 }

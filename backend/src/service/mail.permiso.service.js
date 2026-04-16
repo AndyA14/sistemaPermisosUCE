@@ -1,43 +1,48 @@
+// services/mail.permisos.service.js
 const nodemailer = require('nodemailer');
 require('dotenv').config();
 
 /**
- * Envía un correo electrónico con nodemailer
- * @param {Object} opciones - Configuración del correo
- * @param {string} opciones.to - Destinatario(s)
+ * Transportador SMTP reutilizable usando Gmail
+ */
+const transporter = nodemailer.createTransport({
+  service: 'gmail',
+  auth: {
+    user: process.env.EMAIL_PERMISOS,
+    pass: process.env.EMAIL_PASSWORD,
+  },
+});
+
+/**
+ * Envía un correo electrónico del sistema de permisos.
+ * @param {Object} opciones
  * @param {string} opciones.subject - Asunto del correo
  * @param {string} [opciones.text] - Texto plano del correo
- * @param {string} [opciones.html] - HTML del correo
+ * @param {string} [opciones.html] - Contenido HTML del correo
  * @param {Array} [opciones.attachments] - Archivos adjuntos [{filename, path}]
+ * @param {string} [opciones.to] - Destinatario(s), por defecto EMAIL_DIRECTOR
  */
-async function enviarCorreoP({ subject, text = '', html = '', attachments = [] }) {
+async function enviarCorreoP({ subject, text = '', html = '', attachments = [], to = process.env.EMAIL_DIRECTOR }) {
   try {
-    // Crear transportador SMTP usando Gmail
-    const transporter = nodemailer.createTransport({
-      service: 'gmail',
-      auth: {
-        user: process.env.EMAIL_ADDRESS,
-        pass: process.env.EMAIL_PASSWORD,
-      },
-    });
+    if (!subject) throw new Error("El asunto del correo es obligatorio");
+    if (!to) throw new Error("No se proporcionó destinatario");
 
-    // Opciones del correo
     const mailOptions = {
       from: `"Sistema de Permisos - IAI" <${process.env.EMAIL_PERMISOS}>`,
-      to: process.env.EMAIL_DIRECTOR,
+      to,
       subject,
       text,
       html,
-      attachments, // opcional
+      attachments,
     };
 
-
-    // Enviar correo
     const info = await transporter.sendMail(mailOptions);
     console.log('✅ Correo enviado:', info.messageId);
+    return info;
+
   } catch (error) {
-    // Loguear error sin detener ejecución
     console.error('❌ Error al enviar correo:', error);
+    throw error; // Propagar error para manejo externo
   }
 }
 

@@ -1,3 +1,4 @@
+// src/controller/usuario.controller.js
 const bcrypt = require('bcrypt');
 const { AppDataSource } = require('../config/database');
 const Usuario = require('../entity/Usuario');
@@ -31,7 +32,7 @@ const obtenerUsuario = async (req, res) => {
   }
 };
 
-// Crear usuario
+// Crear usuario y enviar credenciales vía SendGrid
 const crearUsuario = async (req, res) => {
   try {
     const { ci, nombres, apellidos, correo, telefono, direccion, rol } = req.body;
@@ -62,28 +63,30 @@ const crearUsuario = async (req, res) => {
 
     await repo.save(nuevoUsuario);
 
+    // Envío de correo electrónico
     try {
       await enviarCredenciales({
         to: correo,
         usuario: username,
         contrasena: password
       });
-    } catch (error) {
-      console.error("❌ Error enviando correo:", error);
 
-      return res.status(500).json({
-        mensaje: 'Usuario creado pero error al enviar correo'
+      res.status(201).json({
+        mensaje: 'Usuario creado con éxito y credenciales enviadas por correo'
+      });
+    } catch (error) {
+      console.error("❌ Error enviando correo vía SendGrid:", error);
+      // Informamos que el usuario se creó, pero el correo falló
+      res.status(201).json({
+        mensaje: 'Usuario creado, pero hubo un problema al enviar el correo. Verifique la configuración de SendGrid.',
+        error: error.message
       });
     }
 
-    res.status(201).json({
-      mensaje: 'Usuario creado con éxito y correo enviado'
-    });
-
-      } catch (error) {
-        console.error('Error crearUsuario:', error);
-        res.status(500).json({ mensaje: 'Error al crear usuario' });
-      }
+  } catch (error) {
+    console.error('Error crearUsuario:', error);
+    res.status(500).json({ mensaje: 'Error al crear usuario' });
+  }
 };
 
 // Actualizar usuario

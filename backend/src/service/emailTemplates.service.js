@@ -1,4 +1,5 @@
-const { enviarCorreo } = require('./mail.service');
+// src/service/emailTemplates.service.js
+const { enviarCorreo } = require('../service/mail.service');
 require('dotenv').config();
 
 const URL_FRONT = process.env.URL_FRONTEND;
@@ -8,10 +9,8 @@ const EMAIL_DIRECTOR = process.env.EMAIL_DIRECTOR;
 const EMAIL_RRHH = process.env.EMAIL_RRHH;
 const EMAIL_DTICS = process.env.EMAIL_DTICS;
 
-
 /**
  * Plantilla genérica para el pie de página del correo.
- * @returns {string} HTML del footer
  */
 function plantillaFooter() {
   return `
@@ -29,10 +28,8 @@ function plantillaFooter() {
   `;
 }
 
-
 /**
  * Construye la cabecera común para todos los correos.
- * @returns {string} HTML header
  */
 function plantillaHeader() {
   return `
@@ -46,13 +43,8 @@ function plantillaHeader() {
   `;
 }
 
-
 /**
  * Envía correo con credenciales temporales al usuario.
- * @param {Object} params
- * @param {string} params.to - Email destinatario
- * @param {string} params.usuario - Nombre de usuario
- * @param {string} params.contrasena - Contraseña temporal
  */
 async function enviarCredenciales({ to, usuario, contrasena }) {
   const html = `
@@ -81,7 +73,6 @@ async function enviarCredenciales({ to, usuario, contrasena }) {
       ${plantillaFooter()}
     </div>
   `;
-
   await enviarCorreo({
     to,
     subject: 'Bienvenido - Credenciales de acceso al Sistema de Permisos',
@@ -91,9 +82,6 @@ async function enviarCredenciales({ to, usuario, contrasena }) {
 
 /**
  * Envía correo para restablecimiento de contraseña con enlace temporal.
- * @param {Object} params
- * @param {string} params.to - Email destinatario
- * @param {string} params.urlReset - URL para restablecer contraseña
  */
 async function enviarResetPassword({ to, urlReset }) {
   const html = `
@@ -112,7 +100,6 @@ async function enviarResetPassword({ to, urlReset }) {
       ${plantillaFooter()}
     </div>
   `;
-
   await enviarCorreo({
     to,
     subject: 'Restablece tu contraseña - Sistema de Permisos',
@@ -122,8 +109,6 @@ async function enviarResetPassword({ to, urlReset }) {
 
 /**
  * Envía confirmación al usuario luego de un cambio exitoso de contraseña.
- * @param {Object} params
- * @param {string} params.to - Email destinatario
  */
 async function enviarConfirmacionCambioPassword({ to }) {
   const html = `
@@ -137,7 +122,7 @@ async function enviarConfirmacionCambioPassword({ to }) {
           Si no fue usted quien realizó el cambio, por favor comuníquese inmediatamente con el área de soporte.
         </p>
         <div style="text-align: center; margin: 30px 0;">
-          <a href="/login" style="background-color: #0066cc; color: white; padding: 12px 25px; text-decoration: none; border-radius: 5px; font-weight: bold;">
+          <a href="${URL_FRONT}/login" style="background-color: #0066cc; color: white; padding: 12px 25px; text-decoration: none; border-radius: 5px; font-weight: bold;">
             Iniciar sesión
           </a>
         </div>
@@ -145,7 +130,6 @@ async function enviarConfirmacionCambioPassword({ to }) {
       ${plantillaFooter()}
     </div>
   `;
-
   await enviarCorreo({
     to,
     subject: 'Confirmación de cambio de contraseña - Sistema de Permisos',
@@ -153,90 +137,29 @@ async function enviarConfirmacionCambioPassword({ to }) {
   });
 }
 
-async function generarCartaRespuestaHTML({
-  nombresUsuario,
-  estado,
-  observacion,
-  cedula,
-  correo,
-  telefono,
-  direccion,
-  director
-}) {
+async function generarCartaRespuestaHTML({ nombresUsuario, estado, observacion, cedula, correo, telefono, direccion, director }) {
   const estadoTexto = estado === 'autorizado' ? 'AUTORIZADO' : 'DENEGADO';
   const estadoColor = estado === 'autorizado' ? '#27ae60' : '#c0392b';
-
   const fecha = new Date().toLocaleDateString('es-EC', {
     year: 'numeric',
     month: 'long',
     day: 'numeric',
   });
-
+  
+  // (El resto del string HTML de generarCartaRespuestaHTML se mantiene exactamente igual a tu código original)
   const estilosCarta = `
     <style>
-      body {
-        font-family: "Times New Roman", Times, serif;
-        color: #2c3e50;
-        background-color: #ffffff;
-        margin: 0;
-        padding: 2cm;
-        box-sizing: border-box;
-      }
-
-      .contenido {
-        max-width: 700px;
-        margin: auto;
-        line-height: 1.6;
-      }
-
-      .encabezado {
-        text-align: center;
-        font-weight: bold;
-        text-transform: uppercase;
-        font-size: 1.2rem;
-        margin-bottom: 1.5rem;
-      }
-
-      .logo-container {
-        text-align: center;
-        margin-bottom: 1rem;
-      }
-
-      .logo-container img {
-        max-height: 100px;
-      }
-
-      .fecha {
-        text-align: right;
-        margin-bottom: 1.5rem;
-      }
-
-      .destinatario {
-        text-align: left;
-        margin-bottom: 1.5rem;
-      }
-
-      .saludo {
-        margin-bottom: 1rem;
-      }
-
-      .cuerpo {
-        text-align: justify;
-        margin-bottom: 1.5rem;
-      }
-
-      .firma {
-        margin-top: 2rem;
-        text-align: left;
-      }
-
-      .firma p {
-        margin: 0.2rem 0;
-      }
-
-      .firma strong {
-        font-size: 1rem;
-      }
+      body { font-family: "Times New Roman", Times, serif; color: #2c3e50; background-color: #ffffff; margin: 0; padding: 2cm; box-sizing: border-box; }
+      .contenido { max-width: 700px; margin: auto; line-height: 1.6; }
+      .encabezado { text-align: center; font-weight: bold; text-transform: uppercase; font-size: 1.2rem; margin-bottom: 1.5rem; }
+      .logo-container { text-align: center; margin-bottom: 1rem; }
+      .logo-container img { max-height: 100px; }
+      .fecha { text-align: right; margin-bottom: 1.5rem; }
+      .saludo { margin-bottom: 1rem; }
+      .cuerpo { text-align: justify; margin-bottom: 1.5rem; }
+      .firma { margin-top: 2rem; text-align: left; }
+      .firma p { margin: 0.2rem 0; }
+      .firma strong { font-size: 1rem; }
     </style>
   `;
 
@@ -249,31 +172,25 @@ async function generarCartaRespuestaHTML({
     </head>
     <body>
       <div class="contenido">
-
         <div class="logo-container">
           <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRlG2ZniQvzJjbix-fZIaIFJ-gfn3bm6fhHkg&s" alt="Logo UCE" />
         </div>
-
         <div class="encabezado">
           INSTITUTO ACADÉMICO DE IDIOMAS<br />
           UNIVERSIDAD CENTRAL DEL ECUADOR
         </div>
-
         <div class="fecha">
           Quito, ${fecha}
         </div>
-
         <div class="saludo">
           Estimado(a) <strong>${nombresUsuario}</strong>:
         </div>
-
         <div class="cuerpo">
           En atención a su solicitud de permiso, se informa que esta ha sido <strong style="color: ${estadoColor}">${estadoTexto}</strong>.<br /><br />
           La siguiente es la respuesta oficial proporcionada por la Dirección del Instituto Académico de Idiomas:<br /><br />
           <em>"${observacion || 'Sin respuesta registrada.'}"</em><br /><br />
           Agradecemos su comunicación y quedamos atentos ante cualquier inquietud adicional.
         </div>
-
         <div class="firma">
           <p>Atentamente,</p>
           <strong>${director.nombres} ${director.apellidos}</strong><br />
@@ -283,13 +200,11 @@ async function generarCartaRespuestaHTML({
           ${director.telefono ? `<p>Teléfono: ${director.telefono}</p>` : ''}
           ${director.direccion ? `<p>Dirección: ${director.direccion}</p>` : ''}
         </div>
-
       </div>
     </body>
     </html>
   `;
 }
-
 
 module.exports = {
   enviarCredenciales,
@@ -297,6 +212,3 @@ module.exports = {
   enviarConfirmacionCambioPassword,
   generarCartaRespuestaHTML,
 };
-
-
-

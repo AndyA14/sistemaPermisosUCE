@@ -48,9 +48,9 @@ services:
       IMAP_HOST: imap.gmail.com
       IMAP_PORT: 993
       IMAP_SECURE: "true"
-      SMTP_HOST: smtp.gmail.com
-      SMTP_PORT: 587
-      SMTP_SECURE: "false"
+      # --- VARIABLES DE SENDGRID ---
+      SENDGRID_API_KEY: "${SENDGRID_API_KEY}"
+      SENDGRID_SENDER: "${SENDGRID_SENDER}"
 
   frontend:
     build:

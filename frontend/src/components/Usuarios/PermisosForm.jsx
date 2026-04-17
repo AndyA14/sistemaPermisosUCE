@@ -1,5 +1,20 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
+import {
+  Box,
+  Container,
+  Typography,
+  TextField,
+  MenuItem,
+  Button,
+  Paper,
+  Grid,
+  FormControlLabel,
+  Checkbox,
+  Stack
+} from '@mui/material';
+import { UploadFile as UploadFileIcon, Send as SendIcon } from '@mui/icons-material';
+import { toast, ToastContainer } from 'react-toastify';
 
 import {
   crearPermiso,
@@ -10,11 +25,8 @@ import {
 import CartaAtraso from '../PlantillasCartas/CartaAtraso';
 import CartaFalta from '../PlantillasCartas/CartaFalta';
 import CartaSinTimbrar from '../PlantillasCartas/CartaSinTimbrar';
-import LoadingModal from '../LoadingModal'; // Asegúrate que la ruta sea correcta
-import '../../styles/PermisosForm.css';
-
-import { toast, ToastContainer } from 'react-toastify';
 import CartaOtros from '../PlantillasCartas/CartaOtros';
+import LoadingModal from '../LoadingModal';
 
 function PermisosForm() {
   const [tipos, setTipos] = useState([]);
@@ -24,7 +36,6 @@ function PermisosForm() {
   const [perfil, setPerfil] = useState(null);
   const [loading, setLoading] = useState(false);
 
-  // Ref para controlar que el toast de éxito no se repita
   const toastMostrado = useRef(false);
 
   useEffect(() => {
@@ -36,7 +47,6 @@ function PermisosForm() {
           obtenerPerfil()
         ]);
 
-        // Procesar tipos
         const agrupados = dataTipos.reduce((acc, item) => {
           const existente = acc.find((t) => t.nombre === item.nombre);
           const subtipo = {
@@ -55,10 +65,8 @@ function PermisosForm() {
           return acc;
         }, []);
         setTipos(agrupados);
-
         setPerfil(dataPerfil);
 
-        // Mostrar toast éxito solo una vez
         if (!toastMostrado.current) {
           toast.success('Tipos de permiso y perfil cargados correctamente.');
           toastMostrado.current = true;
@@ -85,7 +93,6 @@ function PermisosForm() {
     }));
   };
 
-  // Prepara los datos específicos del permiso según tipo y subtipo
   const getPermisoData = () => {
     if (!tipoSeleccionado) return {};
 
@@ -115,14 +122,8 @@ function PermisosForm() {
     if (tipoSeleccionado.nombre === 'Sin Timbrar') {
       permisoData.no_entrada = !!form.no_entrada;
       permisoData.no_salida = !!form.no_salida;
-
-      permisoData.hora_inicio = form.no_entrada
-        ? form.hora_inicio || '00:00:00'
-        : '00:00:00';
-
-      permisoData.hora_fin = form.no_salida
-        ? form.hora_fin || '00:00:00'
-        : '00:00:00';
+      permisoData.hora_inicio = form.no_entrada ? form.hora_inicio || '00:00:00' : '00:00:00';
+      permisoData.hora_fin = form.no_salida ? form.hora_fin || '00:00:00' : '00:00:00';
     }
 
     if (tipoSeleccionado.nombre === 'Otros') {
@@ -134,125 +135,39 @@ function PermisosForm() {
     return permisoData;
   };
 
-
-  // Genera el HTML de la carta para el correo usando renderToStaticMarkup
   const generarHtmlCarta = () => {
     let cartaComponente = null;
 
     if (tipoSeleccionado?.nombre === 'Atraso') {
-      cartaComponente = (
-        <CartaAtraso perfil={perfil} form={form} tipoSeleccionado={tipoSeleccionado} />
-      );
+      cartaComponente = <CartaAtraso perfil={perfil} form={form} tipoSeleccionado={tipoSeleccionado} />;
     } else if (tipoSeleccionado?.nombre === 'Falta') {
-      cartaComponente = (
-        <CartaFalta perfil={perfil} form={form} tipoSeleccionado={tipoSeleccionado} />
-      );
+      cartaComponente = <CartaFalta perfil={perfil} form={form} tipoSeleccionado={tipoSeleccionado} />;
     } else if (tipoSeleccionado?.nombre === 'Sin Timbrar') {
-      cartaComponente = (
-        <CartaSinTimbrar perfil={perfil} form={form} tipoSeleccionado={tipoSeleccionado} />
-      );
+      cartaComponente = <CartaSinTimbrar perfil={perfil} form={form} tipoSeleccionado={tipoSeleccionado} />;
     } else if (tipoSeleccionado?.nombre === 'Otros') {
-      cartaComponente = (
-        <CartaOtros perfil={perfil} form={form} tipoSeleccionado={tipoSeleccionado} />
-      );
+      cartaComponente = <CartaOtros perfil={perfil} form={form} tipoSeleccionado={tipoSeleccionado} />;
     }
 
     if (!cartaComponente) return '';
 
+    // Este bloque estático SE MANTIENE INTACTO para el envío de correos
     const estilosCarta = `
       <style>
-        body {
-          font-family: "Times New Roman", Times, serif;
-          color: #2c3e50;
-          background-color: #ffffff;
-          margin: 0;           
-          padding: 2cm;
-          box-sizing: border-box;
-        }
-        .modal-contenido {
-          max-width: 700px;
-          margin: 0 auto;
-          padding: 40px;
-          box-sizing: border-box;
-          line-height: 1.6;
-          background-color: #ffffff;
-        }
-        .modal-contenido1 {
-          color: #2c3e50;
-        }
-        .logo-institucion {
-          display: block;
-          max-width: 120px;
-          margin: 0 auto 1.5rem auto;
-        }
-        .carta-encabezado {
-          font-family: "Times New Roman", Times, serif;
-          font-weight: 600;
-          color: #2c3e50;
-          text-transform: uppercase;
-          letter-spacing: 0.06em;
-          text-align: center;
-          margin-bottom: 2rem;
-        }
-        .carta-encabezado p {
-          margin: 0.15rem 0;
-        }
-        .fecha-derecha {
-          text-align: right;
-          margin-bottom: 1.8rem;
-          font-size: 1rem;
-          font-weight: 500;
-          color: #2c3e50;
-        }
-        .destinatario-derecha {
-          text-align: left;
-          margin-bottom: 1.8rem;
-          font-size: 1rem;
-          line-height: 1.4;
-          color: #2c3e50;
-        }
-        .destinatario-derecha p {
-          margin: 0.12rem 0;
-        }
-        .saludo {
-          font-weight: 600;
-          margin-bottom: 1.5rem;
-          text-align: left;
-          color: #2c3e50;
-        }
-        .contenido-justificado {
-          text-align: justify;
-          margin: 0.9rem 0;
-          font-size: 1rem;
-          word-break: break-word;
-          color: #2c3e50;
-        }
-
-        .agradecimiento-derecha {
-          text-align: left;
-          margin-top: 2rem;
-          font-style: italic;
-          font-size: 1rem;
-          color: #2c3e50;
-        }
-
-        .firma-derecha {
-          text-align: left;
-          margin-top: 3rem;
-          font-size: 1rem;
-          font-weight: 400;
-          color: #2c3e50;
-        }
-
-        .firma-derecha p {
-          margin: 3px 0;
-          font-size: 1rem;
-        }
-
-        .firma-derecha strong {
-          font-size: 1.1rem;
-          color: #2c3e50;
-        }
+        body { font-family: "Times New Roman", Times, serif; color: #2c3e50; background-color: #ffffff; margin: 0; padding: 2cm; box-sizing: border-box; }
+        .modal-contenido { max-width: 700px; margin: 0 auto; padding: 40px; box-sizing: border-box; line-height: 1.6; background-color: #ffffff; }
+        .modal-contenido1 { color: #2c3e50; }
+        .logo-institucion { display: block; max-width: 120px; margin: 0 auto 1.5rem auto; }
+        .carta-encabezado { font-family: "Times New Roman", Times, serif; font-weight: 600; color: #2c3e50; text-transform: uppercase; letter-spacing: 0.06em; text-align: center; margin-bottom: 2rem; }
+        .carta-encabezado p { margin: 0.15rem 0; }
+        .fecha-derecha { text-align: right; margin-bottom: 1.8rem; font-size: 1rem; font-weight: 500; color: #2c3e50; }
+        .destinatario-derecha { text-align: left; margin-bottom: 1.8rem; font-size: 1rem; line-height: 1.4; color: #2c3e50; }
+        .destinatario-derecha p { margin: 0.12rem 0; }
+        .saludo { font-weight: 600; margin-bottom: 1.5rem; text-align: left; color: #2c3e50; }
+        .contenido-justificado { text-align: justify; margin: 0.9rem 0; font-size: 1rem; word-break: break-word; color: #2c3e50; }
+        .agradecimiento-derecha { text-align: left; margin-top: 2rem; font-style: italic; font-size: 1rem; color: #2c3e50; }
+        .firma-derecha { text-align: left; margin-top: 3rem; font-size: 1rem; font-weight: 400; color: #2c3e50; }
+        .firma-derecha p { margin: 3px 0; font-size: 1rem; }
+        .firma-derecha strong { font-size: 1.1rem; color: #2c3e50; }
       </style>
     `;
 
@@ -272,7 +187,6 @@ function PermisosForm() {
     `;
   };
 
-  // Envio del formulario, envia permiso y archivo (si existe) junto con el HTML para el correo
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -281,19 +195,13 @@ function PermisosForm() {
       const permisoData = getPermisoData();
       const htmlCarta = generarHtmlCarta();
 
-      await crearPermiso({
-        permisoData,
-        archivo,
-        htmlCorreo: htmlCarta,
-      });
+      await crearPermiso({ permisoData, archivo, htmlCorreo: htmlCarta });
 
-      // Mostrar toast solo una vez
       if (!toastMostrado.current) {
         toast.success('Permiso creado con éxito.');
         toastMostrado.current = true;
       }
 
-      // Reiniciar formulario
       setTipoSeleccionado(null);
       setForm({});
       setArchivo(null);
@@ -305,375 +213,415 @@ function PermisosForm() {
     }
   };
 
+  // Función manejadora de subida de archivos re-utilizable
+  const handleFileUpload = (e, asuntoDefault) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const extension = file.name.split('.').pop();
+    const limpiarTexto = (texto) =>
+      texto.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/ñ/gi, 'n')
+        .trim().split(/\s+/).map((p) => p.charAt(0).toUpperCase() + p.slice(1).toLowerCase()).join('_');
+
+    const nombres = perfil?.nombres ? limpiarTexto(perfil.nombres) : 'Nombre';
+    const apellidos = perfil?.apellidos ? limpiarTexto(perfil.apellidos) : 'Apellido';
+    const asunto = form.subtipo?.replace(/\s+/g, '_').toLowerCase() || asuntoDefault;
+
+    let fechaRango = form.fecha || 'sin_fecha';
+    if (tipoSeleccionado?.nombre === 'Falta') {
+        const formatoFecha = (fechaStr) => {
+            if (!fechaStr) return 'sin_fecha';
+            const date = new Date(fechaStr + 'T00:00:00');
+            return date.toLocaleDateString('es-EC', { day: '2-digit', month: '2-digit', year: 'numeric' }).replace(/\//g, '-');
+        };
+        const fIni = formatoFecha(form.fecha_inicio);
+        const fFin = formatoFecha(form.fecha_fin);
+        fechaRango = fIni === fFin ? fIni : `${fIni}_a_${fFin}`;
+    }
+
+    const timestamp = Date.now();
+    const nombreArchivo = `${apellidos}_${nombres}_${fechaRango}_${tipoSeleccionado?.nombre === 'Falta' ? timestamp + '_' : ''}${asunto}.${extension}`;
+    setArchivo(new File([file], nombreArchivo, { type: file.type }));
+  };
+
   return (
-    <div className="permiso-container">
-      <ToastContainer
-        position="top-right"
-        autoClose={4000}
-        hideProgressBar={false}
-        newestOnTop
-        closeOnClick
-        rtl={false}
-        pauseOnFocusLoss
-        draggable
-        pauseOnHover
-        theme="colored"
-      />
-
+    <Box sx={{ minHeight: '100vh', backgroundColor: 'var(--color-bg)', py: 4 }}>
+      <ToastContainer position="top-right" autoClose={4000} theme="colored" />
       {loading && <LoadingModal visible={true} />}
-      <form className="permiso-form" onSubmit={handleSubmit}>
-        <h2>Solicitar Permiso</h2>
 
-        <label>Tipo de permiso:</label>
-        <select
-          name="tipo"
-          value={tipoSeleccionado?.nombre || ''}
-          onChange={(e) => {
-            const seleccionado = tipos.find((t) => t.nombre === e.target.value);
-            setTipoSeleccionado(seleccionado || null);
-            setForm({});
-            setArchivo(null);
-            toastMostrado.current = false; // Reinicia el control toast cuando se cambia tipo
-          }}
-          required
-        >
-          <option value="">Seleccione...</option>
-          {tipos.map((t) => (
-            <option key={t.nombre} value={t.nombre}>
-              {t.nombre}
-            </option>
-          ))}
-        </select>
+      <Container maxWidth="xl">
+        <Typography variant="h4" align="center" gutterBottom sx={{ fontWeight: 'bold', color: 'var(--color-text)', mb: 4 }}>
+          Generador de Solicitudes
+        </Typography>
 
-        {tipoSeleccionado?.sub_tipos?.length > 0 && (
-          <>
-            <label>Subtipo:</label>
-            <select
-              name="subtipo"
-              value={form.subtipo || ''}
-              onChange={handleChange}
-              required
-            >
-              <option value="">Seleccione...</option>
-              {tipoSeleccionado.sub_tipos.map((st) => (
-                <option key={st.value} value={st.value}>
-                  {st.label}
-                </option>
-              ))}
-            </select>
-          </>
-        )}
+        {/* Uso de Grid para las dos columnas */}
+        <Grid container spacing={4}>
+          
+          {/* COLUMNA IZQUIERDA: FORMULARIO */}
+          <Grid item xs={12} md={5}>
+            <Paper elevation={3} sx={{ p: 4, borderRadius: 3, backgroundColor: 'var(--card-bg)' }}>
+              <Typography variant="h5" gutterBottom sx={{ fontWeight: 600, color: 'var(--color-text)', mb: 3 }}>
+                Formulario de Permiso
+              </Typography>
 
-        {/* === FALTA con rango de fechas === */}
-        {tipoSeleccionado?.nombre === 'Falta' && (
-          <>
-            <label>Fecha inicio:</label>
-            <input
-              type="date"
-              name="fecha_inicio"
-              value={form.fecha_inicio || ''}
-              onChange={handleChange}
-              required
-            />
-
-            <label>Fecha fin:</label>
-            <input
-              type="date"
-              name="fecha_fin"
-              value={form.fecha_fin || ''}
-              onChange={handleChange}
-              required
-              min={form.fecha_inicio || undefined} // evita fechas fin antes que inicio
-            />
-
-            <label>Descripción / Observación:</label>
-            <textarea
-              name="descripcion"
-              value={form.descripcion || ''}
-              onChange={handleChange}
-              rows={3}
-            />
-
-            {/* Mostrar archivo si es cita médica o reposo médico */}
-            {['cita_medica', 'reposo_médico'].includes(form.subtipo) && (
-              <>
-                <label>Evidencia (PDF, imagen):</label>
-                <input
-                  type="file"
-                  accept=".pdf,image/*"
+              <Box component="form" onSubmit={handleSubmit} sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
+                
+                <TextField
+                  select
+                  label="Tipo de permiso"
+                  name="tipo"
+                  value={tipoSeleccionado?.nombre || ''}
                   onChange={(e) => {
-                    const file = e.target.files[0];
-                    if (!file) return;
-
-                    // Genera string para fecha o rango
-                    const formatoFecha = (fechaStr) => {
-                      if (!fechaStr) return 'sin_fecha';
-                      const date = new Date(fechaStr + 'T00:00:00');
-                      return date.toLocaleDateString('es-EC', {
-                        day: '2-digit',
-                        month: '2-digit',
-                        year: 'numeric',
-                      }).replace(/\//g, '-');
-                    };
-
-                    const fechaInicioFormateada = formatoFecha(form.fecha_inicio);
-                    const fechaFinFormateada = formatoFecha(form.fecha_fin);
-
-                    const fechaRango = fechaInicioFormateada === fechaFinFormateada
-                      ? fechaInicioFormateada
-                      : `${fechaInicioFormateada}_a_${fechaFinFormateada}`;
-
-                    const extension = file.name.split('.').pop();
-
-                    const limpiarTexto = (texto) =>
-                      texto
-                        .normalize('NFD')
-                        .replace(/[\u0300-\u036f]/g, '')
-                        .replace(/ñ/gi, 'n')
-                        .trim()
-                        .split(/\s+/)
-                        .map((p) => p.charAt(0).toUpperCase() + p.slice(1).toLowerCase())
-                        .join('_');
-
-                    const nombres = perfil?.nombres ? limpiarTexto(perfil.nombres) : 'Nombre';
-                    const apellidos = perfil?.apellidos ? limpiarTexto(perfil.apellidos) : 'Apellido';
-                    const asunto = form.subtipo?.replace(/\s+/g, '_').toLowerCase() || 'asunto';
-                    const timestamp = Date.now();
-                    const nombreArchivo = `${apellidos}_${nombres}_${fechaRango}_${timestamp}_${asunto}.${extension}`;
-                    const archivoRenombrado = new File([file], nombreArchivo, { type: file.type });
-
-                    setArchivo(archivoRenombrado);
+                    const seleccionado = tipos.find((t) => t.nombre === e.target.value);
+                    setTipoSeleccionado(seleccionado || null);
+                    setForm({});
+                    setArchivo(null);
+                    toastMostrado.current = false;
                   }}
-                />
-                <small>
-                  El archivo será renombrado automáticamente como: <br />
-                  <code>Apellidos_Nombres_FechaInicio_a_FechaFin_Asunto.pdf</code>
-                </small>
-              </>
-            )}
-          </>
-        )}
+                  required
+                  fullWidth
+                >
+                  <MenuItem value=""><em>Seleccione...</em></MenuItem>
+                  {tipos.map((t) => (
+                    <MenuItem key={t.nombre} value={t.nombre}>{t.nombre}</MenuItem>
+                  ))}
+                </TextField>
 
-        {/* === ATRASO === */}
-        {tipoSeleccionado?.nombre === 'Atraso' && (
-          <>
-            <label>Fecha:</label>
-            <input
-              type="date"
-              name="fecha"
-              value={form.fecha || ''}
-              onChange={handleChange}
-              required
-            />
+                {tipoSeleccionado?.sub_tipos?.length > 0 && (
+                  <TextField
+                    select
+                    label="Subtipo"
+                    name="subtipo"
+                    value={form.subtipo || ''}
+                    onChange={handleChange}
+                    required
+                    fullWidth
+                  >
+                    <MenuItem value=""><em>Seleccione...</em></MenuItem>
+                    {tipoSeleccionado.sub_tipos.map((st) => (
+                      <MenuItem key={st.value} value={st.value}>{st.label}</MenuItem>
+                    ))}
+                  </TextField>
+                )}
 
-            <label>Hora de entrada:</label>
-            <input
-              type="time"
-              name="hora_inicio"
-              value={form.hora_inicio || ''}
-              onChange={handleChange}
-              required
-            />
+                {/* === FALTA === */}
+                {tipoSeleccionado?.nombre === 'Falta' && (
+                  <>
+                    <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+                      <TextField
+                        type="date"
+                        label="Fecha inicio"
+                        name="fecha_inicio"
+                        value={form.fecha_inicio || ''}
+                        onChange={handleChange}
+                        required
+                        fullWidth
+                        InputLabelProps={{ shrink: true }}
+                      />
+                      <TextField
+                        type="date"
+                        label="Fecha fin"
+                        name="fecha_fin"
+                        value={form.fecha_fin || ''}
+                        onChange={handleChange}
+                        required
+                        fullWidth
+                        inputProps={{ min: form.fecha_inicio }}
+                        InputLabelProps={{ shrink: true }}
+                      />
+                    </Stack>
+                    
+                    <TextField
+                      label="Descripción / Observación"
+                      name="descripcion"
+                      value={form.descripcion || ''}
+                      onChange={handleChange}
+                      multiline
+                      rows={3}
+                      fullWidth
+                    />
 
-            <label>Motivo:</label>
-            <textarea
-              name="descripcion"
-              value={form.descripcion || ''}
-              onChange={handleChange}
-              rows={3}
-            />
+                    {['cita_medica', 'reposo_médico'].includes(form.subtipo) && (
+                      <Box sx={{ mt: 1 }}>
+                        <Button variant="outlined" component="label" fullWidth startIcon={<UploadFileIcon />}>
+                          Subir Evidencia (PDF, Imagen)
+                          <input type="file" hidden accept=".pdf,image/*" onChange={(e) => handleFileUpload(e, 'evidencia')} />
+                        </Button>
+                        {archivo && <Typography variant="caption" display="block" sx={{ mt: 1, color: 'var(--color-link)' }}>Archivo: {archivo.name}</Typography>}
+                      </Box>
+                    )}
+                  </>
+                )}
 
-            {/* Adjuntar evidencia si es cita médica */}
-            {form.subtipo === 'cita_medica' && (
-              <>
-                <label>Evidencia (PDF, imagen):</label>
-                <input
-                  type="file"
-                  accept=".pdf,image/*"
-                  onChange={(e) => {
-                    const file = e.target.files[0];
-                    if (!file) return;
+                {/* === ATRASO === */}
+                {tipoSeleccionado?.nombre === 'Atraso' && (
+                  <>
+                    <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+                      <TextField
+                        type="date"
+                        label="Fecha"
+                        name="fecha"
+                        value={form.fecha || ''}
+                        onChange={handleChange}
+                        required
+                        fullWidth
+                        InputLabelProps={{ shrink: true }}
+                      />
+                      <TextField
+                        type="time"
+                        label="Hora de entrada"
+                        name="hora_inicio"
+                        value={form.hora_inicio || ''}
+                        onChange={handleChange}
+                        required
+                        fullWidth
+                        InputLabelProps={{ shrink: true }}
+                      />
+                    </Stack>
+                    
+                    <TextField
+                      label="Motivo"
+                      name="descripcion"
+                      value={form.descripcion || ''}
+                      onChange={handleChange}
+                      multiline
+                      rows={3}
+                      fullWidth
+                    />
 
-                    const extension = file.name.split('.').pop();
+                    {form.subtipo === 'cita_medica' && (
+                      <Box sx={{ mt: 1 }}>
+                        <Button variant="outlined" component="label" fullWidth startIcon={<UploadFileIcon />}>
+                          Subir Evidencia (PDF, Imagen)
+                          <input type="file" hidden accept=".pdf,image/*" onChange={(e) => handleFileUpload(e, 'evidencia')} />
+                        </Button>
+                        {archivo && <Typography variant="caption" display="block" sx={{ mt: 1, color: 'var(--color-link)' }}>Archivo: {archivo.name}</Typography>}
+                      </Box>
+                    )}
+                  </>
+                )}
 
-                    // Fecha para nombre del archivo
-                    const fecha = form.fecha || 'sin_fecha';
+                {/* === SIN TIMBRAR === */}
+                {tipoSeleccionado?.nombre === 'Sin Timbrar' && (
+                  <>
+                    <TextField
+                      type="date"
+                      label="Fecha"
+                      name="fecha"
+                      value={form.fecha || ''}
+                      onChange={handleChange}
+                      required
+                      fullWidth
+                      InputLabelProps={{ shrink: true }}
+                    />
 
-                    // Función para limpiar texto
-                    const limpiarTexto = (texto) =>
-                      texto
-                        .normalize('NFD')
-                        .replace(/[\u0300-\u036f]/g, '')
-                        .replace(/ñ/gi, 'n')
-                        .trim()
-                        .split(/\s+/)
-                        .map((p) => p.charAt(0).toUpperCase() + p.slice(1).toLowerCase())
-                        .join('_');
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                      <FormControlLabel
+                        control={<Checkbox checked={!!form.no_entrada} onChange={handleChange} name="no_entrada" color="primary" />}
+                        label="Falta entrada"
+                      />
+                      {form.no_entrada && (
+                        <TextField
+                          type="time"
+                          label="Hora de entrada"
+                          name="hora_inicio"
+                          value={form.hora_inicio || ''}
+                          onChange={handleChange}
+                          required
+                          fullWidth
+                          InputLabelProps={{ shrink: true }}
+                        />
+                      )}
 
-                    const nombres = perfil?.nombres ? limpiarTexto(perfil.nombres) : 'Nombre';
-                    const apellidos = perfil?.apellidos ? limpiarTexto(perfil.apellidos) : 'Apellido';
-                    const asunto = form.subtipo?.replace(/\s+/g, '_').toLowerCase() || 'asunto';
+                      <FormControlLabel
+                        control={<Checkbox checked={!!form.no_salida} onChange={handleChange} name="no_salida" color="primary" />}
+                        label="Falta salida"
+                      />
+                      {form.no_salida && (
+                        <TextField
+                          type="time"
+                          label="Hora de salida"
+                          name="hora_fin"
+                          value={form.hora_fin || ''}
+                          onChange={handleChange}
+                          required
+                          fullWidth
+                          InputLabelProps={{ shrink: true }}
+                        />
+                      )}
+                    </Box>
 
-                    const nombreArchivo = `${apellidos}_${nombres}_${fecha}_${asunto}.${extension}`;
-                    const archivoRenombrado = new File([file], nombreArchivo, { type: file.type });
+                    <TextField
+                      label="Descripción"
+                      name="descripcion"
+                      value={form.descripcion || ''}
+                      onChange={handleChange}
+                      multiline
+                      rows={3}
+                      fullWidth
+                    />
+                  </>
+                )}
 
-                    setArchivo(archivoRenombrado);
+                {/* === OTROS === */}
+                {tipoSeleccionado?.nombre === 'Otros' && (
+                  <>
+                    <TextField
+                      type="date"
+                      label="Fecha"
+                      name="fecha"
+                      value={form.fecha || ''}
+                      onChange={handleChange}
+                      required
+                      fullWidth
+                      InputLabelProps={{ shrink: true }}
+                    />
+                    
+                    <TextField
+                      label="Descripción (opcional)"
+                      name="descripcion"
+                      value={form.descripcion || ''}
+                      onChange={handleChange}
+                      multiline
+                      rows={3}
+                      fullWidth
+                    />
+
+                    <Box sx={{ mt: 1 }}>
+                      <Button variant="outlined" component="label" fullWidth startIcon={<UploadFileIcon />}>
+                        Adjuntar evidencia (opcional)
+                        <input type="file" hidden accept=".pdf,image/*" onChange={(e) => handleFileUpload(e, 'otros')} />
+                      </Button>
+                      {archivo && <Typography variant="caption" display="block" sx={{ mt: 1, color: 'var(--color-link)' }}>Archivo: {archivo.name}</Typography>}
+                    </Box>
+                  </>
+                )}
+
+                <Button
+                  type="submit"
+                  variant="contained"
+                  disabled={!tipoSeleccionado}
+                  size="large"
+                  startIcon={<SendIcon />}
+                  sx={{
+                    mt: 2,
+                    background: 'linear-gradient(135deg, var(--btn-crear-bg), #2980b9)',
+                    color: 'white',
+                    fontWeight: 'bold',
+                    py: 1.5,
+                    borderRadius: 2,
+                    textTransform: 'none'
                   }}
-                />
-                <small>
-                  El archivo será renombrado automáticamente como: <br />
-                  <code>Apellidos_Nombres_Fecha_Asunto.pdf</code>
-                </small>
-              </>
-            )}
-          </>
-        )}
+                >
+                  Enviar Solicitud
+                </Button>
 
+              </Box>
+            </Paper>
+          </Grid>
 
-        {/* === SIN TIMBRAR === */}
-        {tipoSeleccionado?.nombre === 'Sin Timbrar' && (
-          <>
-            <label>Fecha:</label>
-            <input
-              type="date"
-              name="fecha"
-              value={form.fecha || ''}
-              onChange={handleChange}
-              required
-            />
-
-            {/* Checkbox Entrada */}
-            <label className="checkbox-inline">
-              <input
-                type="checkbox"
-                name="no_entrada"
-                checked={!!form.no_entrada}
-                onChange={handleChange}
-              />
-              Falta entrada
-            </label>
-
-            {/* Hora entrada si aplica */}
-            {form.no_entrada && (
-              <>
-                <label>Hora de entrada:</label>
-                <input
-                  type="time"
-                  name="hora_inicio"
-                  value={form.hora_inicio || ''}
-                  onChange={handleChange}
-                  required
-                />
-              </>
-            )}
-
-            {/* Checkbox Salida */}
-            <label className="checkbox-inline">
-              <input
-                type="checkbox"
-                name="no_salida"
-                checked={!!form.no_salida}
-                onChange={handleChange}
-              />
-              Falta salida
-            </label>
-
-            {/* Hora salida si aplica */}
-            {form.no_salida && (
-              <>
-                <label>Hora de salida:</label>
-                <input
-                  type="time"
-                  name="hora_fin"
-                  value={form.hora_fin || ''}
-                  onChange={handleChange}
-                  required
-                />
-              </>
-            )}
-
-            <label>Descripción:</label>
-            <textarea
-              name="descripcion"
-              value={form.descripcion || ''}
-              onChange={handleChange}
-              rows={3}
-            />
-          </>
-        )}
-
-        {tipoSeleccionado?.nombre === 'Otros' && (
-          <>
-            <label>Fecha:</label>
-            <input
-              type="date"
-              name="fecha"
-              value={form.fecha || ''}
-              onChange={handleChange}
-              required
-            />
-
-            <label>Descripción (opcional):</label>
-            <textarea
-              name="descripcion"
-              value={form.descripcion || ''}
-              onChange={handleChange}
-              rows={3}
-            />
-
-            <label>Adjuntar evidencia (opcional):</label>
-            <input
-              type="file"
-              accept=".pdf,image/*"
-              onChange={(e) => {
-                const file = e.target.files[0];
-                if (!file) return;
-
-                const extension = file.name.split('.').pop();
-                const limpiarTexto = (texto) =>
-                  texto
-                    .normalize('NFD')
-                    .replace(/[\u0300-\u036f]/g, '')
-                    .replace(/ñ/gi, 'n')
-                    .trim()
-                    .split(/\s+/)
-                    .map((p) => p.charAt(0).toUpperCase() + p.slice(1).toLowerCase())
-                    .join('_');
-
-                const nombres = perfil?.nombres ? limpiarTexto(perfil.nombres) : 'Nombre';
-                const apellidos = perfil?.apellidos ? limpiarTexto(perfil.apellidos) : 'Apellido';
-                const fecha = form.fecha || 'sin_fecha';
-                const asunto = form.subtipo?.replace(/\s+/g, '_').toLowerCase() || 'otros';
-                const nombreArchivo = `${apellidos}_${nombres}_${fecha}_${asunto}.${extension}`;
-                const archivoRenombrado = new File([file], nombreArchivo, { type: file.type });
-
-                setArchivo(archivoRenombrado);
+          {/* COLUMNA DERECHA: VISTA PREVIA (A4 PAPER SIMULATION) */}
+          <Grid item xs={12} md={7}>
+            <Box
+              sx={{
+                width: '100%',
+                display: 'flex',
+                justifyContent: 'center',
+                position: { md: 'sticky' },
+                top: { md: 24 }
               }}
-            />
-          </>
-        )}
-
-        <br />
-        <button type="submit" disabled={!tipoSeleccionado}>
-          Enviar Solicitud
-        </button>
-      </form>
-      
-      <div className="preview-carta">
-        {tipoSeleccionado?.nombre === 'Atraso' && (
-          <CartaAtraso perfil={perfil} form={form} tipoSeleccionado={tipoSeleccionado} />
-        )}
-        {tipoSeleccionado?.nombre === 'Falta' && (
-          <CartaFalta perfil={perfil} form={form} tipoSeleccionado={tipoSeleccionado} />
-        )}
-        {tipoSeleccionado?.nombre === 'Sin Timbrar' && (
-          <CartaSinTimbrar perfil={perfil} form={form} tipoSeleccionado={tipoSeleccionado} />
-        )}
-        {tipoSeleccionado?.nombre === 'Otros' && (
-          <CartaOtros perfil={perfil} form={form} tipoSeleccionado={tipoSeleccionado} />
-        )}
-      </div>
-    </div>
+            >
+              <Paper 
+                elevation={6} 
+                sx={{ 
+                  width: '100%',
+                  maxWidth: '800px', // Ancho aproximado de A4
+                  minHeight: '789px',
+                  padding: { xs: 4, sm: '1.3cm 2cm' },
+                  backgroundColor: '#ffffff', // Siempre blanco para simular papel
+                  color: '#2c3e50',
+                  fontFamily: '"Times New Roman", Times, serif',
+                  borderRadius: 2,
+                  boxSizing: 'border-box',
+                  overflowY: 'auto',
+                  
+                  // ========================================================
+                  // NESTED SELECTORS: Reemplazan a PermisosForm.css para los 
+                  // componentes hijos (CartaAtraso, CartaFalta, etc.)
+                  // ========================================================
+                  '& .carta-encabezado': {
+                    fontWeight: 600,
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.06em',
+                    textAlign: 'center',
+                    mb: 4,
+                    '& p': { margin: '0.15rem 0' }
+                  },
+                  '& .fecha-derecha': {
+                    textAlign: 'right',
+                    mb: 3,
+                    fontSize: '1rem',
+                    fontWeight: 500
+                  },
+                  '& .destinatario-derecha': {
+                    textAlign: 'left',
+                    mb: 3,
+                    fontSize: '1rem',
+                    lineHeight: 1.3,
+                    '& p': { margin: '0.12rem 0' }
+                  },
+                  '& .saludo': {
+                    fontWeight: 600,
+                    mb: 3,
+                    textAlign: 'left'
+                  },
+                  '& .contenido-justificado': {
+                    textAlign: 'justify',
+                    my: 2,
+                    fontSize: '1rem',
+                    wordBreak: 'break-word',
+                    hyphens: 'auto'
+                  },
+                  '& .agradecimiento-derecha': {
+                    textAlign: 'left',
+                    mt: 4,
+                    fontStyle: 'italic',
+                    fontSize: '1rem'
+                  },
+                  '& .firma-derecha': {
+                    textAlign: 'left',
+                    mt: 6,
+                    fontSize: '1rem',
+                    fontWeight: 400,
+                    '& p': { margin: '0.15rem 0' },
+                    '& strong': { fontSize: '1.1rem' }
+                  },
+                  '& .logo-institucion': {
+                    display: 'block',
+                    maxWidth: '120px',
+                    height: 'auto',
+                    margin: '0 auto 1.5rem auto'
+                  }
+                }}
+              >
+                {!tipoSeleccionado && (
+                  <Box display="flex" height="100%" alignItems="center" justifyItems="center" color="grey.400">
+                    <Typography variant="h6" align="center" width="100%" fontStyle="italic">
+                      La vista previa del documento aparecerá aquí...
+                    </Typography>
+                  </Box>
+                )}
+                {tipoSeleccionado?.nombre === 'Atraso' && <CartaAtraso perfil={perfil} form={form} tipoSeleccionado={tipoSeleccionado} />}
+                {tipoSeleccionado?.nombre === 'Falta' && <CartaFalta perfil={perfil} form={form} tipoSeleccionado={tipoSeleccionado} />}
+                {tipoSeleccionado?.nombre === 'Sin Timbrar' && <CartaSinTimbrar perfil={perfil} form={form} tipoSeleccionado={tipoSeleccionado} />}
+                {tipoSeleccionado?.nombre === 'Otros' && <CartaOtros perfil={perfil} form={form} tipoSeleccionado={tipoSeleccionado} />}
+              </Paper>
+            </Box>
+          </Grid>
+          
+        </Grid>
+      </Container>
+    </Box>
   );
 }
 

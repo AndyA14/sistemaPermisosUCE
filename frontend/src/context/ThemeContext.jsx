@@ -28,18 +28,33 @@ export const ThemeContextProvider = ({ children }) => {
       createTheme({
         palette: {
           mode, // 'light' o 'dark'
-          // Aquí podemos poner los colores principales de tu app en el futuro
           primary: {
-            main: '#4f46e5', // Un azul/índigo moderno
+            // Sincronizado con tu --color-sky-500 (light) y --color-sky-400 (dark)
+            main: mode === 'dark' ? '#38bdf8' : '#0ea5e9', 
           },
           secondary: {
-            main: '#ec4899', // Un rosa moderno
+            main: '#ec4899', // Mantenemos tu rosa moderno
           },
+          // 🚀 LA SOLUCIÓN AL TEXTO INVISIBLE:
+          // Le decimos a MUI exactamente qué colores de fondo usar en modo oscuro
+          background: {
+            default: mode === 'dark' ? '#0f172a' : '#ffffff', // var(--color-bg-primary)
+            paper: mode === 'dark' ? '#1e293b' : '#ffffff',   // var(--color-bg-elevated)
+          },
+          // Forzamos el color del texto para que siempre haga contraste con los fondos
+          text: {
+            primary: mode === 'dark' ? '#f1f5f9' : '#1e293b', 
+            secondary: mode === 'dark' ? '#cbd5e1' : '#64748b',
+          }
         },
         // Hacemos que los botones sean un poco más redondeados por defecto
         shape: {
           borderRadius: 8,
         },
+        // Sincronizamos la tipografía con la de tu root.css
+        typography: {
+          fontFamily: '"Inter", "SF Pro Display", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+        }
       }),
     [mode]
   );

@@ -1,19 +1,37 @@
 import React, { useEffect, useState } from 'react';
-import { 
-  HiOutlineUser, 
-  HiOutlineMail, 
-  HiOutlinePhone, 
-  HiOutlineIdentification,
-  HiOutlineLocationMarker,
-  HiOutlineLockClosed,
-  HiOutlineCamera,
-  HiOutlinePencil,
-  HiOutlineEye,
-  HiOutlineEyeOff
-} from 'react-icons/hi';
+import {
+  Box,
+  Typography,
+  Avatar,
+  IconButton,
+  Grid,
+  Paper,
+  Button,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  TextField,
+  InputAdornment,
+  Alert,
+  Badge,
+  Container
+} from '@mui/material';
+import {
+  PersonOutline,
+  MailOutline,
+  PhoneOutlined,
+  BadgeOutlined, // Alternativa para Identification
+  LocationOnOutlined,
+  LockOutlined,
+  PhotoCamera,
+  EditOutlined,
+  Visibility,
+  VisibilityOff
+} from '@mui/icons-material';
+
 import { obtenerPerfil, cambiarContrasena } from '../services/api';
 import LoadingModal from '../components/LoadingModal';
-import '../styles/Perfil.css';
 
 const ROLES_LABELS = {
   docente: 'Usuarios de Idiomas Extranjeros',
@@ -36,7 +54,7 @@ function Perfil() {
   const [passError, setPassError] = useState('');
   const [passSuccess, setPassSuccess] = useState('');
   const [changingPass, setChangingPass] = useState(false);
-  
+
   // Estados para mostrar/ocultar contraseñas
   const [showOldPass, setShowOldPass] = useState(false);
   const [showNewPass, setShowNewPass] = useState(false);
@@ -83,244 +101,294 @@ function Perfil() {
     }
   };
 
+  const handleCloseModal = () => {
+    setShowModal(false);
+    setOldPass('');
+    setNewPass('');
+    setConfirmPass('');
+    setPassError('');
+    setPassSuccess('');
+    setShowOldPass(false);
+    setShowNewPass(false);
+    setShowConfirmPass(false);
+  };
+
+  // Renderizado del componente de Información
+  const InfoItem = ({ icon, label, value }) => (
+    <Box
+      sx={{
+        display: 'flex',
+        alignItems: 'flex-start',
+        gap: 2,
+        p: 2,
+        backgroundColor: 'var(--color-bg)',
+        borderRadius: 3,
+        border: '1px solid var(--color-border)',
+        transition: 'all 0.3s ease',
+        '&:hover': {
+          borderColor: 'var(--btn-crear-bg)',
+          boxShadow: '0 2px 8px rgba(52, 152, 219, 0.1)',
+        }
+      }}
+    >
+      <Box
+        sx={{
+          width: 48,
+          height: 48,
+          borderRadius: 2,
+          background: 'linear-gradient(135deg, var(--btn-crear-bg), #2980b9)',
+          color: 'white',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          flexShrink: 0,
+          boxShadow: '0 2px 8px rgba(52, 152, 219, 0.2)'
+        }}
+      >
+        {icon}
+      </Box>
+      <Box flex={1}>
+        <Typography variant="caption" sx={{ color: 'var(--color-text-secondary)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+          {label}
+        </Typography>
+        <Typography variant="body1" sx={{ color: 'var(--color-text)', fontWeight: 500, mt: 0.5 }}>
+          {value}
+        </Typography>
+      </Box>
+    </Box>
+  );
+
   return (
-    <div>
+    <Box sx={{ minHeight: '100vh', py: 4, background: 'linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)' }}>
       <LoadingModal visible={loading || changingPass} />
 
-      {error && (
-        <div className="perfil-error">
-          <p>Error: {error}</p>
-        </div>
-      )}
-      
-      {!loading && !usuario && (
-        <div className="perfil-error">
-          <p>No se encontró información del perfil.</p>
-        </div>
-      )}
+      <Container maxWidth="md">
+        {error && (
+          <Alert severity="error" sx={{ mb: 3, borderRadius: 2 }}>
+            {error}
+          </Alert>
+        )}
 
-      {usuario && (
-        <div className="perfil-container">
-          {/* Header con foto y datos principales */}
-          <div className="perfil-header">
-            <div className="perfil-avatar-section">
-              <div className="perfil-avatar-container">
-                <img
-                  src={usuario.fotoUrl || 'https://images.icon-icons.com/1378/PNG/512/avatardefault_92824.png'}
-                  alt="Foto de perfil"
-                  className="perfil-avatar"
-                />
-                <button className="avatar-edit-btn" title="Cambiar foto">
-                  <HiOutlineCamera />
-                </button>
-              </div>
-              <div className="perfil-basic-info">
-                <h1 className="perfil-nombre">{usuario.nombres} {usuario.apellidos}</h1>
-                <div className="perfil-rol">
-                  <HiOutlineUser className="role-icon" />
-                  <span>{ROLES_LABELS[usuario.rol] || 'Usuario'}</span>
-                </div>
-              </div>
-            </div>
-          </div>
+        {!loading && !usuario && !error && (
+          <Alert severity="warning" sx={{ mb: 3, borderRadius: 2 }}>
+            No se encontró información del perfil.
+          </Alert>
+        )}
 
-          {/* Información detallada en cards */}
-          <div className="perfil-content">
-            <div className="perfil-section">
-              <div className="section-header">
-                <h2>Información Personal</h2>
-                <button className="edit-btn" title="Editar información">
-                  <HiOutlinePencil />
-                </button>
-              </div>
-              
-              <div className="info-grid">
-                <div className="info-item">
-                  <div className="info-icon">
-                    <HiOutlineMail />
-                  </div>
-                  <div className="info-content">
-                    <label>Correo electrónico</label>
-                    <span>{usuario.correo}</span>
-                  </div>
-                </div>
-
-                <div className="info-item">
-                  <div className="info-icon">
-                    <HiOutlinePhone />
-                  </div>
-                  <div className="info-content">
-                    <label>Teléfono</label>
-                    <span>{usuario.telefono || 'No registrado'}</span>
-                  </div>
-                </div>
-
-                <div className="info-item">
-                  <div className="info-icon">
-                    <HiOutlineIdentification />
-                  </div>
-                  <div className="info-content">
-                    <label>Cédula de identidad</label>
-                    <span>{usuario.ci || 'No registrada'}</span>
-                  </div>
-                </div>
-
-                <div className="info-item full-width">
-                  <div className="info-icon">
-                    <HiOutlineLocationMarker />
-                  </div>
-                  <div className="info-content">
-                    <label>Dirección</label>
-                    <span>{usuario.direccion || 'No registrada'}</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Sección de seguridad */}
-            <div className="perfil-section">
-              <div className="section-header">
-                <h2>Seguridad</h2>
-              </div>
-              
-              <div className="security-actions">
-                <button 
-                  className="security-btn change-password-btn" 
-                  onClick={() => setShowModal(true)}
-                >
-                  <HiOutlineLockClosed />
-                  <span>Cambiar Contraseña</span>
-                </button>
-              </div>
-            </div>
-          </div>
-
-          {/* Modal mejorado para cambiar contraseña */}
-          {showModal && (
-            <div className="modal-overlay">
-              <div className="modal-container">
-                <div className="modal-header">
-                  <h3>Cambiar Contraseña</h3>
-                  <button 
-                    className="modal-close-btn"
-                    onClick={() => {
-                      setShowModal(false);
-                      setOldPass('');
-                      setNewPass('');
-                      setConfirmPass('');
-                      setPassError('');
-                      setPassSuccess('');
-                      setShowOldPass(false);
-                      setShowNewPass(false);
-                      setShowConfirmPass(false);
-                    }}
-                  >
-                    ×
-                  </button>
-                </div>
+        {usuario && (
+          <Paper elevation={4} sx={{ borderRadius: 4, overflow: 'hidden', backgroundColor: 'var(--color-bg)' }}>
+            
+            {/* Header del Perfil */}
+            <Box
+              sx={{
+                background: 'linear-gradient(135deg, var(--btn-crear-bg) 0%, #2980b9 100%)',
+                color: 'white',
+                p: { xs: 3, sm: 4 },
+                position: 'relative'
+              }}
+            >
+              <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, alignItems: 'center', gap: 4, position: 'relative', zIndex: 1 }}>
                 
-                <form onSubmit={handlePasswordChange} className="modal-form">
-                  <div className="input-group">
-                    <label>Contraseña actual</label>
-                    <div className="password-input-container">
-                      <input
-                        type={showOldPass ? "text" : "password"}
-                        placeholder="Ingresa tu contraseña actual"
-                        value={oldPass}
-                        onChange={(e) => setOldPass(e.target.value)}
-                        required
-                      />
-                      <button
-                        type="button"
-                        className="password-toggle"
-                        onClick={() => setShowOldPass(!showOldPass)}
-                      >
-                        {showOldPass ? <HiOutlineEyeOff /> : <HiOutlineEye />}
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="input-group">
-                    <label>Nueva contraseña</label>
-                    <div className="password-input-container">
-                      <input
-                        type={showNewPass ? "text" : "password"}
-                        placeholder="Ingresa la nueva contraseña"
-                        value={newPass}
-                        onChange={(e) => setNewPass(e.target.value)}
-                        required
-                      />
-                      <button
-                        type="button"
-                        className="password-toggle"
-                        onClick={() => setShowNewPass(!showNewPass)}
-                      >
-                        {showNewPass ? <HiOutlineEyeOff /> : <HiOutlineEye />}
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="input-group">
-                    <label>Confirmar nueva contraseña</label>
-                    <div className="password-input-container">
-                      <input
-                        type={showConfirmPass ? "text" : "password"}
-                        placeholder="Confirma la nueva contraseña"
-                        value={confirmPass}
-                        onChange={(e) => setConfirmPass(e.target.value)}
-                        required
-                      />
-                      <button
-                        type="button"
-                        className="password-toggle"
-                        onClick={() => setShowConfirmPass(!showConfirmPass)}
-                      >
-                        {showConfirmPass ? <HiOutlineEyeOff /> : <HiOutlineEye />}
-                      </button>
-                    </div>
-                  </div>
-
-                  {passError && (
-                    <div className="alert alert-error">
-                      {passError}
-                    </div>
-                  )}
-                  
-                  {passSuccess && (
-                    <div className="alert alert-success">
-                      {passSuccess}
-                    </div>
-                  )}
-
-                  <div className="modal-actions">
-                    <button type="submit" className="btn btn-primary">
-                      Guardar Cambios
-                    </button>
-                    <button 
-                      type="button" 
-                      className="btn btn-secondary"
-                      onClick={() => {
-                        setShowModal(false);
-                        setOldPass('');
-                        setNewPass('');
-                        setConfirmPass('');
-                        setPassError('');
-                        setPassSuccess('');
-                        setShowOldPass(false);
-                        setShowNewPass(false);
-                        setShowConfirmPass(false);
+                <Badge
+                  overlap="circular"
+                  anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+                  badgeContent={
+                    <IconButton
+                      sx={{
+                        bgcolor: 'var(--btn-crear-bg)',
+                        color: 'white',
+                        border: '3px solid white',
+                        '&:hover': { bgcolor: '#2980b9', transform: 'scale(1.1)' },
+                        transition: 'all 0.3s'
                       }}
                     >
-                      Cancelar
-                    </button>
-                  </div>
-                </form>
-              </div>
-            </div>
-          )}
-        </div>
-      )}
-    </div>
+                      <PhotoCamera fontSize="small" />
+                    </IconButton>
+                  }
+                >
+                  <Avatar
+                    src={usuario.fotoUrl || 'https://images.icon-icons.com/1378/PNG/512/avatardefault_92824.png'}
+                    sx={{
+                      width: 140,
+                      height: 140,
+                      border: '5px solid rgba(255, 255, 255, 0.3)',
+                      boxShadow: '0 10px 25px rgba(0, 0, 0, 0.2)',
+                      transition: 'transform 0.3s ease',
+                      '&:hover': { transform: 'scale(1.05)' }
+                    }}
+                  />
+                </Badge>
+
+                <Box sx={{ textAlign: { xs: 'center', sm: 'left' } }}>
+                  <Typography variant="h3" sx={{ fontWeight: 700, mb: 1, textShadow: '0 2px 4px rgba(0, 0, 0, 0.1)' }}>
+                    {usuario.nombres} {usuario.apellidos}
+                  </Typography>
+                  <Box
+                    sx={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 1,
+                      backgroundColor: 'rgba(255, 255, 255, 0.2)',
+                      backdropFilter: 'blur(10px)',
+                      px: 2,
+                      py: 1,
+                      borderRadius: 10,
+                      border: '1px solid rgba(255, 255, 255, 0.1)'
+                    }}
+                  >
+                    <PersonOutline />
+                    <Typography variant="body1" fontWeight={500}>
+                      {ROLES_LABELS[usuario.rol] || 'Usuario'}
+                    </Typography>
+                  </Box>
+                </Box>
+              </Box>
+            </Box>
+
+            {/* Contenido Principal */}
+            <Box sx={{ p: { xs: 2, sm: 4 }, display: 'flex', flexDirection: 'column', gap: 4 }}>
+              
+              {/* Sección Información Personal */}
+              <Box>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, pb: 1, borderBottom: '2px solid var(--color-border)' }}>
+                  <Typography variant="h6" fontWeight={600} color="var(--color-text)">
+                    Información Personal
+                  </Typography>
+                  <IconButton sx={{ color: 'var(--color-text)', '&:hover': { bgcolor: 'var(--btn-crear-bg)', color: 'white' } }}>
+                    <EditOutlined />
+                  </IconButton>
+                </Box>
+
+                <Grid container spacing={2}>
+                  <Grid item xs={12} sm={6}>
+                    <InfoItem icon={<MailOutline />} label="Correo electrónico" value={usuario.correo} />
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <InfoItem icon={<PhoneOutlined />} label="Teléfono" value={usuario.telefono || 'No registrado'} />
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <InfoItem icon={<BadgeOutlined />} label="Cédula de identidad" value={usuario.ci || 'No registrada'} />
+                  </Grid>
+                  <Grid item xs={12}>
+                    <InfoItem icon={<LocationOnOutlined />} label="Dirección" value={usuario.direccion || 'No registrada'} />
+                  </Grid>
+                </Grid>
+              </Box>
+
+              {/* Sección Seguridad */}
+              <Box>
+                <Box sx={{ mb: 2, pb: 1, borderBottom: '2px solid var(--color-border)' }}>
+                  <Typography variant="h6" fontWeight={600} color="var(--color-text)">
+                    Seguridad
+                  </Typography>
+                </Box>
+                <Button
+                  variant="contained"
+                  startIcon={<LockOutlined />}
+                  onClick={() => setShowModal(true)}
+                  sx={{
+                    py: 1.5,
+                    px: 3,
+                    borderRadius: 3,
+                    fontWeight: 600,
+                    textTransform: 'none',
+                    background: 'linear-gradient(135deg, var(--btn-crear-bg), #2980b9)',
+                    boxShadow: '0 4px 12px rgba(52, 152, 219, 0.2)',
+                    '&:hover': {
+                      transform: 'translateY(-2px)',
+                      boxShadow: '0 6px 20px rgba(52, 152, 219, 0.3)',
+                    }
+                  }}
+                >
+                  Cambiar Contraseña
+                </Button>
+              </Box>
+            </Box>
+          </Paper>
+        )}
+      </Container>
+
+      {/* Dialog para Cambiar Contraseña */}
+      <Dialog open={showModal} onClose={handleCloseModal} PaperProps={{ sx: { borderRadius: 4, width: '100%', maxWidth: 480, bgcolor: 'var(--color-bg)' } }}>
+        <DialogTitle sx={{ borderBottom: '1px solid var(--color-border)', color: 'var(--color-text)', fontWeight: 600 }}>
+          Cambiar Contraseña
+        </DialogTitle>
+        <DialogContent sx={{ mt: 2 }}>
+          {passError && <Alert severity="error" sx={{ mb: 2 }}>{passError}</Alert>}
+          {passSuccess && <Alert severity="success" sx={{ mb: 2 }}>{passSuccess}</Alert>}
+
+          <Box component="form" id="password-form" onSubmit={handlePasswordChange} sx={{ display: 'flex', flexDirection: 'column', gap: 3, mt: 1 }}>
+            <TextField
+              label="Contraseña actual"
+              type={showOldPass ? "text" : "password"}
+              fullWidth
+              required
+              value={oldPass}
+              onChange={(e) => setOldPass(e.target.value)}
+              InputProps={{
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <IconButton onClick={() => setShowOldPass(!showOldPass)} edge="end">
+                      {showOldPass ? <VisibilityOff /> : <Visibility />}
+                    </IconButton>
+                  </InputAdornment>
+                ),
+                sx: { borderRadius: 2 }
+              }}
+            />
+            <TextField
+              label="Nueva contraseña"
+              type={showNewPass ? "text" : "password"}
+              fullWidth
+              required
+              value={newPass}
+              onChange={(e) => setNewPass(e.target.value)}
+              InputProps={{
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <IconButton onClick={() => setShowNewPass(!showNewPass)} edge="end">
+                      {showNewPass ? <VisibilityOff /> : <Visibility />}
+                    </IconButton>
+                  </InputAdornment>
+                ),
+                sx: { borderRadius: 2 }
+              }}
+            />
+            <TextField
+              label="Confirmar nueva contraseña"
+              type={showConfirmPass ? "text" : "password"}
+              fullWidth
+              required
+              value={confirmPass}
+              onChange={(e) => setConfirmPass(e.target.value)}
+              InputProps={{
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <IconButton onClick={() => setShowConfirmPass(!showConfirmPass)} edge="end">
+                      {showConfirmPass ? <VisibilityOff /> : <Visibility />}
+                    </IconButton>
+                  </InputAdornment>
+                ),
+                sx: { borderRadius: 2 }
+              }}
+            />
+          </Box>
+        </DialogContent>
+        <DialogActions sx={{ p: 3, pt: 0 }}>
+          <Button onClick={handleCloseModal} sx={{ color: 'var(--color-text)' }}>
+            Cancelar
+          </Button>
+          <Button 
+            type="submit" 
+            form="password-form" 
+            variant="contained" 
+            sx={{ borderRadius: 2, background: 'linear-gradient(135deg, var(--btn-crear-bg), #2980b9)' }}
+          >
+            Guardar Cambios
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </Box>
   );
 }
 

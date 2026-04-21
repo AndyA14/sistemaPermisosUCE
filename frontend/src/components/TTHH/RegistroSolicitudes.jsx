@@ -1,16 +1,42 @@
 import React, { useEffect, useState, useRef } from 'react';
 import {
+  Box,
+  Container,
+  Typography,
+  Paper,
+  Grid,
+  TextField,
+  Button,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Dialog,
+  DialogContent,
+  Autocomplete,
+  Chip,
+  Tooltip,
+  IconButton
+} from '@mui/material';
+import {
+  Download as DownloadIcon,
+  Visibility as VisibilityIcon,
+  DateRange as DateRangeIcon
+} from '@mui/icons-material';
+import { toast, ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+
+// Importaciones locales
+import {
   buscarDocentesPorNombre,
   descargarInformeMensual,
   descargarInformeFiltrado,
   obtenerPermisosFiltrados,
 } from '../../services/api';
-import '../../styles/RegistroSolicitudes.css';
-import { renderEstado } from '../../utils/renderEstado';
 import CartaSeguimientoPermiso from '../PlantillasCartas/PlantillasVistasC/CartaSeguimientoPermiso';
-import { toast, ToastContainer } from 'react-toastify';
 import LoadingModal from '../../components/LoadingModal.jsx';
-import 'react-toastify/dist/ReactToastify.css';
 
 function RegistroSolicitudes() {
   const [filtro, setFiltro] = useState({ mes: '', anio: '', desde: '', hasta: '', nombre: '' });
@@ -79,6 +105,7 @@ function RegistroSolicitudes() {
     filtrarPermisos();
   }, [filtro, permisosCargados]);
 
+  // Lógica del Autocomplete de Material UI
   useEffect(() => {
     if (nombreUsuario.trim().length < 3) {
       setListaUsuarios([]);
@@ -99,19 +126,6 @@ function RegistroSolicitudes() {
 
     return () => clearTimeout(handler);
   }, [nombreUsuario]);
-
-  const manejarCambioNombreUsuario = (e) => {
-    const valor = e.target.value;
-    setNombreUsuario(valor);
-    if (valor === '') setFiltro(prev => ({ ...prev, nombre: '' }));
-  };
-
-  const manejarSeleccionUsuario = (usuario) => {
-    const nombreCompleto = `${usuario.nombres} ${usuario.apellidos}`;
-    setNombreUsuario(nombreCompleto);
-    setFiltro(prev => ({ ...prev, nombre: nombreCompleto }));
-    setListaUsuarios([]);
-  };
 
   const manejarMesAnio = (e) => {
     const valor = e.target.value;
@@ -187,100 +201,210 @@ function RegistroSolicitudes() {
     }
   };
 
+  // Helper para renderizar estados (Reemplaza a renderEstado de utils)
+  const renderEstadoChip = (estado) => {
+    const estadoNorm = estado?.toLowerCase().trim() || '';
+    if (estadoNorm.includes('aprobado') || estadoNorm.includes('autorizado')) {
+      return <Chip label={estado} color="success" size="small" sx={{ fontWeight: 'bold' }} />;
+    }
+    if (estadoNorm.includes('rechazado') || estadoNorm.includes('denegado')) {
+      return <Chip label={estado} color="error" size="small" sx={{ fontWeight: 'bold' }} />;
+    }
+    if (estadoNorm.includes('pendiente')) {
+      return <Chip label={estado} color="warning" size="small" sx={{ fontWeight: 'bold' }} />;
+    }
+    if (estadoNorm.includes('revision')) {
+      return <Chip label={estado} color="info" size="small" sx={{ fontWeight: 'bold' }} />;
+    }
+    return <Chip label={estado || 'Desconocido'} size="small" sx={{ fontWeight: 'bold', bgcolor: 'grey.500', color: 'white' }} />;
+  };
+
   return (
-    <div className="registro-container">
+    <Box sx={{ minHeight: '100vh', py: 4, backgroundColor: 'var(--color-bg)' }}>
       <ToastContainer position="top-right" autoClose={4000} theme="colored" />
       {cargando && <LoadingModal visible={true} />}
 
-      <h2>Registro de Solicitudes</h2>
+      <Container maxWidth="xl">
+        <Typography 
+          variant="h4" 
+          component="h2" 
+          gutterBottom 
+          sx={{ fontWeight: 'bold', color: 'var(--color-text)', mb: 4 }}
+        >
+          Registro de Solicitudes
+        </Typography>
 
-      <div className="dashboard-filtros">
-        <h3>Filtros y generación de informes</h3>
+        {/* Sección de Filtros */}
+        <Paper elevation={3} sx={{ p: 3, mb: 4, borderRadius: 3, backgroundColor: 'var(--card-bg)' }}>
+          <Typography variant="h6" gutterBottom sx={{ fontWeight: 600, color: 'var(--color-text)', mb: 3 }}>
+            Filtros y generación de informes
+          </Typography>
 
-        <div className="autocomplete-container">
-          <input
-            type="text"
-            placeholder="Buscar usuario por nombre"
-            value={nombreUsuario}
-            onChange={manejarCambioNombreUsuario}
-            autoComplete="off"
-          />
-          {listaUsuarios.length > 0 && (
-            <ul className="autocomplete-list">
-              {listaUsuarios.map(usuario => (
-                <li
-                  key={usuario.id}
-                  onClick={() => manejarSeleccionUsuario(usuario)}
-                  onMouseDown={e => e.preventDefault()}
-                >
-                  {usuario.nombres} {usuario.apellidos}
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
+          <Grid container spacing={3} alignItems="center">
+            {/* Buscador Autocomplete */}
+            <Grid item xs={12} md={4}>
+              <Autocomplete
+                freeSolo
+                options={listaUsuarios}
+                getOptionLabel={(option) => typeof option === 'string' ? option : `${option.nombres} ${option.apellidos}`}
+                onInputChange={(event, newInputValue) => {
+                  setNombreUsuario(newInputValue);
+                  if (newInputValue === '') setFiltro(prev => ({ ...prev, nombre: '' }));
+                }}
+                onChange={(event, newValue) => {
+                  if (newValue && typeof newValue === 'object') {
+                    const nombreCompleto = `${newValue.nombres} ${newValue.apellidos}`;
+                    setFiltro(prev => ({ ...prev, nombre: nombreCompleto }));
+                  } else {
+                    setFiltro(prev => ({ ...prev, nombre: newValue || '' }));
+                  }
+                }}
+                renderInput={(params) => (
+                  <TextField 
+                    {...params} 
+                    label="Buscar usuario por nombre" 
+                    variant="outlined" 
+                    fullWidth
+                  />
+                )}
+              />
+            </Grid>
 
-        <input
-          type="month"
-          value={filtro.anio && filtro.mes ? `${filtro.anio}-${filtro.mes.padStart(2, '0')}` : ''}
-          onChange={manejarMesAnio}
-        />
+            {/* Selector de Mes/Año */}
+            <Grid item xs={12} sm={6} md={3}>
+              <TextField
+                type="month"
+                label="Filtrar por Mes"
+                value={filtro.anio && filtro.mes ? `${filtro.anio}-${filtro.mes.padStart(2, '0')}` : ''}
+                onChange={manejarMesAnio}
+                fullWidth
+                InputLabelProps={{ shrink: true }}
+              />
+            </Grid>
+            <Grid item xs={12} sm={6} md={5}>
+              <Button 
+                variant="contained" 
+                startIcon={<DownloadIcon />}
+                onClick={descargarMensual} 
+                disabled={!filtro.mes || !filtro.anio}
+                fullWidth
+                sx={{ py: 1.5, background: 'linear-gradient(135deg, var(--btn-crear-bg), #2980b9)' }}
+              >
+                Descargar Informe Mensual
+              </Button>
+            </Grid>
 
-        <input type="date" value={filtro.desde} onChange={manejarFechaDesde} />
-        <input type="date" value={filtro.hasta} onChange={manejarFechaHasta} />
+            {/* Selector de Rango de Fechas */}
+            <Grid item xs={12} sm={6} md={2}>
+              <TextField
+                type="date"
+                label="Desde"
+                value={filtro.desde}
+                onChange={manejarFechaDesde}
+                fullWidth
+                InputLabelProps={{ shrink: true }}
+              />
+            </Grid>
+            <Grid item xs={12} sm={6} md={2}>
+              <TextField
+                type="date"
+                label="Hasta"
+                value={filtro.hasta}
+                onChange={manejarFechaHasta}
+                fullWidth
+                InputLabelProps={{ shrink: true }}
+              />
+            </Grid>
+            <Grid item xs={12} md={8}>
+              <Button 
+                variant="contained" 
+                startIcon={<DateRangeIcon />}
+                onClick={descargarPorRango} 
+                disabled={!filtro.desde || !filtro.hasta}
+                fullWidth
+                sx={{ py: 1.5, background: 'linear-gradient(135deg, var(--btn-crear-bg), #2980b9)' }}
+              >
+                Descargar Informe por Rango
+              </Button>
+            </Grid>
+          </Grid>
+        </Paper>
 
-        <button onClick={descargarMensual} disabled={!filtro.mes || !filtro.anio}>
-          Descargar Informe Mensual
-        </button>
-        <button onClick={descargarPorRango} disabled={!filtro.desde || !filtro.hasta}>
-          Descargar Informe por Rango
-        </button>
-      </div>
+        {/* Tabla de Permisos */}
+        <Paper elevation={3} sx={{ borderRadius: 3, overflow: 'hidden', backgroundColor: 'var(--card-bg)' }}>
+          <Box sx={{ p: 3, borderBottom: '1px solid var(--color-border)' }}>
+            <Typography variant="h6" sx={{ fontWeight: 600, color: 'var(--color-text)' }}>
+              Últimos permisos
+            </Typography>
+          </Box>
+          
+          <TableContainer sx={{ maxHeight: 600 }}>
+            <Table stickyHeader aria-label="tabla de permisos">
+              <TableHead>
+                <TableRow>
+                  <TableCell sx={{ background: 'linear-gradient(135deg, var(--btn-crear-bg), #2980b9)', color: 'white', fontWeight: 'bold' }}>Usuario</TableCell>
+                  <TableCell sx={{ background: 'linear-gradient(135deg, var(--btn-crear-bg), #2980b9)', color: 'white', fontWeight: 'bold' }}>Tipo</TableCell>
+                  <TableCell sx={{ background: 'linear-gradient(135deg, var(--btn-crear-bg), #2980b9)', color: 'white', fontWeight: 'bold' }}>Subtipo</TableCell>
+                  <TableCell sx={{ background: 'linear-gradient(135deg, var(--btn-crear-bg), #2980b9)', color: 'white', fontWeight: 'bold' }}>Fecha inicio</TableCell>
+                  <TableCell sx={{ background: 'linear-gradient(135deg, var(--btn-crear-bg), #2980b9)', color: 'white', fontWeight: 'bold' }}>Fecha fin</TableCell>
+                  <TableCell sx={{ background: 'linear-gradient(135deg, var(--btn-crear-bg), #2980b9)', color: 'white', fontWeight: 'bold' }}>Estado</TableCell>
+                  <TableCell align="center" sx={{ background: 'linear-gradient(135deg, var(--btn-crear-bg), #2980b9)', color: 'white', fontWeight: 'bold' }}>Acciones</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {permisos.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={7} align="center" sx={{ py: 4, color: 'var(--color-text-secondary)' }}>
+                      No hay permisos para mostrar con estos filtros.
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  permisos.map(p => (
+                    <TableRow key={p.id} hover sx={{ '&:hover': { backgroundColor: 'var(--color-surface-hover, rgba(0,0,0,0.02))' } }}>
+                      <TableCell sx={{ color: 'var(--color-text)' }}>{p.usuario.nombres} {p.usuario.apellidos}</TableCell>
+                      <TableCell sx={{ color: 'var(--color-text)' }}>{p.tipo.nombre}</TableCell>
+                      <TableCell sx={{ color: 'var(--color-text)' }}>{p.tipo.sub_tipo || '-'}</TableCell>
+                      <TableCell sx={{ color: 'var(--color-text)' }}>{p.fecha_inicio}</TableCell>
+                      <TableCell sx={{ color: 'var(--color-text)' }}>{p.fecha_fin}</TableCell>
+                      <TableCell>
+                        {renderEstadoChip(p.estado_general)}
+                      </TableCell>
+                      <TableCell align="center">
+                        <Tooltip title="Ver Carta">
+                          <IconButton 
+                            color="primary" 
+                            onClick={() => abrirDetalle(p)}
+                            sx={{ color: 'var(--color-link)' }}
+                          >
+                            <VisibilityIcon />
+                          </IconButton>
+                        </Tooltip>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        </Paper>
 
-      <div className="tabla-permisos-container">
-        <h3>Últimos permisos</h3>
-        {permisos.length === 0 ? (
-          <p>No hay permisos para mostrar con estos filtros.</p>
-        ) : (
-          <table className="tabla-permisos">
-            <thead>
-              <tr>
-                <th>Usuario</th>
-                <th>Tipo</th>
-                <th>Subtipo</th>
-                <th>Fecha inicio</th>
-                <th>Fecha fin</th>
-                <th>Estado</th>
-                <th>Acciones</th>
-              </tr>
-            </thead>
-            <tbody>
-              {permisos.map(p => (
-                <tr key={p.id}>
-                  <td>{p.usuario.nombres} {p.usuario.apellidos}</td>
-                  <td>{p.tipo.nombre}</td>
-                  <td>{p.tipo.sub_tipo}</td>
-                  <td>{p.fecha_inicio}</td>
-                  <td>{p.fecha_fin}</td>
-                  <td>{renderEstado(p.estado_general)}</td>
-                  <td>
-                    <button onClick={() => abrirDetalle(p)}>Ver</button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </div>
+        {/* Modal para Detalles de Permiso */}
+        <Dialog 
+          open={!!permisoDetalle} 
+          onClose={cerrarDetalle}
+          maxWidth="md"
+          fullWidth
+          PaperProps={{
+            sx: { borderRadius: 4, backgroundColor: 'var(--color-bg)', color: 'var(--color-text)' }
+          }}
+        >
+          <DialogContent sx={{ p: 0 }}>
+            {permisoDetalle && <CartaSeguimientoPermiso permiso={permisoDetalle} />}
+          </DialogContent>
+        </Dialog>
 
-      {permisoDetalle && (
-        <div className="modal-fondo" onClick={cerrarDetalle}>
-          <div className="modal-contenido" onClick={e => e.stopPropagation()}>
-            <CartaSeguimientoPermiso permiso={permisoDetalle} />
-          </div>
-        </div>
-      )}
-    </div>
+      </Container>
+    </Box>
   );
 }
 

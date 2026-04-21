@@ -7,7 +7,19 @@ import {
 } from '../../services/api';
 import LoadingModal from '../../components/LoadingModal';
 import { toast, ToastContainer } from 'react-toastify';
-import '../../styles/TipoPermisoGestion.css';
+
+// 📦 Importaciones de Material UI
+import {
+  Box, Container, Paper, Typography, Grid, Button, TextField,
+  Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
+  Chip, IconButton, Tooltip, InputAdornment
+} from '@mui/material';
+
+// 🎨 Importaciones de React Icons (Estilo Material)
+import {
+  MdAssignment, MdAdd, MdEdit, MdDelete, MdSave,
+  MdCancel, MdTitle, MdLabel, MdFormatListBulleted
+} from 'react-icons/md';
 
 function TipoPermisoGestion() {
   const [tipos, setTipos] = useState([]);
@@ -15,8 +27,7 @@ function TipoPermisoGestion() {
   const [form, setForm] = useState({ id: null, nombre: '', sub_tipo: '' });
   const [showForm, setShowForm] = useState(false);
 
-  // refs para controlar toasts únicos
-  const toastCargaMostrado = useRef(false); // 🔐 evitar duplicación en carga inicial
+  const toastCargaMostrado = useRef(false);
 
   useEffect(() => {
     cargarTipos();
@@ -28,12 +39,10 @@ function TipoPermisoGestion() {
       const data = await obtenerTiposPermiso();
       setTipos(data);
 
-      // 🔐 Mostrar toast de carga solo 1 vez en todo el ciclo de vida
       if (!toastCargaMostrado.current) {
         toast.success('📦 Tipos de permiso cargados correctamente');
         toastCargaMostrado.current = true;
       }
-
     } catch {
       toast.error('❌ Error al cargar tipos de permiso');
     } finally {
@@ -104,197 +113,191 @@ function TipoPermisoGestion() {
   };
 
   return (
-    <div className="tipo-permiso-container">
-      <ToastContainer
-        position="top-right"
-        autoClose={3500}
-        hideProgressBar={false}
-        newestOnTop
-        closeOnClick
-        pauseOnHover
-        draggable
-        theme="colored"
-      />
-
+    <Container maxWidth="lg" sx={{ py: 4, minHeight: 'calc(100vh - 80px)' }}>
+      <ToastContainer position="top-right" autoClose={3500} theme="colored" />
       <LoadingModal visible={loading} />
 
-      {/* 🎯 Header mejorado con estadísticas */}
-      <div className="header-section">
-        <div className="header-content">
-          <h1>📋 Gestión de Tipos de Permiso</h1>
-          <p className="subtitle">Administra los tipos de permisos disponibles en el sistema</p>
-          <div className="stats-overview">
-            <div className="stat-item">
-              <span className="stat-number">{tipos.length}</span>
-              <span className="stat-label">Total de Tipos</span>
-            </div>
-            <div className="stat-item">
-              <span className="stat-number">{tipos.filter(t => t.sub_tipo).length}</span>
-              <span className="stat-label">Con Sub-tipos</span>
-            </div>
-          </div>
-        </div>
-      </div>
+      {/* 🎯 Header con estadísticas */}
+      <Paper elevation={3} sx={{ p: 4, mb: 4, borderRadius: 3, textAlign: 'center' }}>
+        <Typography variant="h3" fontWeight="bold" color="primary" gutterBottom display="flex" justifyContent="center" alignItems="center" gap={2}>
+          <MdAssignment /> Gestión de Tipos de Permiso
+        </Typography>
+        <Typography variant="subtitle1" color="text.secondary" mb={4}>
+          Administra los tipos de permisos disponibles en el sistema
+        </Typography>
 
-      {/* 🎨 Botón de crear mejorado */}
-      <div className="actions-section">
+        <Grid container spacing={3} justifyContent="center">
+          <Grid item xs={12} sm={6} md={4}>
+            <Paper elevation={2} sx={{ p: 3, bgcolor: 'primary.main', color: 'white', borderRadius: 2, transition: '0.3s', '&:hover': { transform: 'translateY(-4px)', boxShadow: 6 } }}>
+              <Typography variant="h3" fontWeight="bold">{tipos.length}</Typography>
+              <Typography variant="overline" sx={{ letterSpacing: 1 }}>Total de Tipos</Typography>
+            </Paper>
+          </Grid>
+          <Grid item xs={12} sm={6} md={4}>
+            <Paper elevation={2} sx={{ p: 3, bgcolor: 'secondary.main', color: 'white', borderRadius: 2, transition: '0.3s', '&:hover': { transform: 'translateY(-4px)', boxShadow: 6 } }}>
+              <Typography variant="h3" fontWeight="bold">{tipos.filter(t => t.sub_tipo).length}</Typography>
+              <Typography variant="overline" sx={{ letterSpacing: 1 }}>Con Sub-tipos</Typography>
+            </Paper>
+          </Grid>
+        </Grid>
+      </Paper>
+
+      {/* 🎨 Botón de crear / Indicador */}
+      <Box display="flex" justifyContent="center" mb={4}>
         {!showForm ? (
-          <button 
-            className="btn btn-primary create-btn" 
+          <Button 
+            variant="contained" 
+            color="success" 
+            size="large" 
+            startIcon={<MdAdd />}
             onClick={() => setShowForm(true)}
+            sx={{ borderRadius: 2, px: 4, py: 1.5, fontSize: '1.1rem' }}
           >
-            ➕ Nuevo Tipo de Permiso
-          </button>
+            Nuevo Tipo de Permiso
+          </Button>
         ) : (
-          <div className="form-indicator">
-            <span className="form-badge">
-              {form.id ? '✏️ Editando' : '➕ Creando Nuevo'}
-            </span>
-          </div>
+          <Chip 
+            color="warning" 
+            icon={form.id ? <MdEdit /> : <MdAdd />} 
+            label={form.id ? 'Editando Permiso' : 'Creando Nuevo Permiso'} 
+            sx={{ px: 2, py: 2.5, fontSize: '1rem', fontWeight: 'bold' }}
+          />
         )}
-      </div>
+      </Box>
 
-      {/* ✨ Formulario mejorado */}
+      {/* ✨ Formulario */}
       {showForm && (
-        <div className="form-section">
-          <div className="form-header">
-            <h3>{form.id ? '✏️ Editar Tipo de Permiso' : '➕ Crear Nuevo Tipo'}</h3>
-            <p>Complete la información del tipo de permiso</p>
-          </div>
+        <Paper elevation={3} sx={{ p: 4, mb: 4, borderRadius: 3 }}>
+          <Box textAlign="center" mb={4}>
+            <Typography variant="h5" color="primary" fontWeight="bold">
+              {form.id ? 'Editar Tipo de Permiso' : 'Crear Nuevo Tipo'}
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              Complete la información del tipo de permiso
+            </Typography>
+          </Box>
           
-          <form className="tipo-permiso-form" onSubmit={handleSubmit}>
-            <div className="form-grid">
-              <div className="form-group">
-                <label>
-                  <span className="label-icon">📝</span>
-                  <span className="label-text">Nombre del Tipo *</span>
-                </label>
-                <div className="input-wrapper">
-                  <input
-                    type="text"
-                    name="nombre"
-                    value={form.nombre}
-                    onChange={handleChange}
-                    required
-                    placeholder="Ej: Vacaciones, Permiso médico..."
-                    className="form-input"
-                  />
-                </div>
-              </div>
+          <Box component="form" onSubmit={handleSubmit}>
+            <Grid container spacing={3}>
+              <Grid item xs={12} md={6}>
+                <TextField
+                  fullWidth
+                  required
+                  label="Nombre del Tipo"
+                  name="nombre"
+                  value={form.nombre}
+                  onChange={handleChange}
+                  placeholder="Ej: Vacaciones, Permiso médico..."
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start"><MdTitle /></InputAdornment>
+                    ),
+                  }}
+                />
+              </Grid>
+              <Grid item xs={12} md={6}>
+                <TextField
+                  fullWidth
+                  label="Sub-tipo (Opcional)"
+                  name="sub_tipo"
+                  value={form.sub_tipo}
+                  onChange={handleChange}
+                  placeholder="Ej: Con goce, Sin goce..."
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start"><MdLabel /></InputAdornment>
+                    ),
+                  }}
+                />
+              </Grid>
+            </Grid>
 
-              <div className="form-group">
-                <label>
-                  <span className="label-icon">🏷️</span>
-                  <span className="label-text">Sub-tipo (Opcional)</span>
-                </label>
-                <div className="input-wrapper">
-                  <input
-                    type="text"
-                    name="sub_tipo"
-                    value={form.sub_tipo}
-                    onChange={handleChange}
-                    placeholder="Ej: Con goce, Sin goce..."
-                    className="form-input"
-                  />
-                </div>
-              </div>
-            </div>
-
-            <div className="form-actions">
-              <button type="submit" className="btn btn-success">
-                {form.id ? '💾 Actualizar Tipo' : '➕ Crear Tipo'}
-              </button>
-              <button
-                type="button"
-                className="btn btn-secondary"
+            <Box display="flex" gap={2} justifyContent="center" mt={4} pt={3} borderTop={1} borderColor="divider">
+              <Button type="submit" variant="contained" color="primary" startIcon={<MdSave />}>
+                {form.id ? 'Actualizar Tipo' : 'Crear Tipo'}
+              </Button>
+              <Button 
+                variant="outlined" 
+                color="inherit" 
+                startIcon={<MdCancel />}
                 onClick={() => {
                   setShowForm(false);
                   setForm({ id: null, nombre: '', sub_tipo: '' });
                 }}
               >
-                ❌ Cancelar
-              </button>
-            </div>
-          </form>
-        </div>
+                Cancelar
+              </Button>
+            </Box>
+          </Box>
+        </Paper>
       )}
 
       {/* 📊 Tabla moderna */}
-      <div className="table-section">
-        <div className="table-header">
-          <h3>📊 Lista de Tipos de Permiso</h3>
-          <p>Administra todos los tipos de permisos disponibles</p>
-        </div>
+      <Paper elevation={3} sx={{ p: { xs: 2, md: 4 }, borderRadius: 3 }}>
+        <Box textAlign="center" mb={3}>
+          <Typography variant="h5" color="primary" fontWeight="bold" display="flex" justifyContent="center" alignItems="center" gap={1}>
+            <MdFormatListBulleted /> Lista de Tipos de Permiso
+          </Typography>
+        </Box>
 
         {tipos.length === 0 ? (
-          <div className="empty-state">
-            <div className="empty-icon">📋</div>
-            <h4>No hay tipos de permiso</h4>
-            <p>Comienza creando el primer tipo de permiso para el sistema</p>
-            <button 
-              className="btn btn-primary"
-              onClick={() => setShowForm(true)}
-            >
-              ➕ Crear Primer Tipo
-            </button>
-          </div>
+          <Box textAlign="center" py={6}>
+            <MdAssignment style={{ fontSize: '4rem', opacity: 0.3, marginBottom: '1rem' }} />
+            <Typography variant="h6" color="text.primary">No hay tipos de permiso</Typography>
+            <Typography variant="body2" color="text.secondary" mb={3}>
+              Comienza creando el primer tipo de permiso para el sistema
+            </Typography>
+            <Button variant="contained" onClick={() => setShowForm(true)} startIcon={<MdAdd />}>
+              Crear Primer Tipo
+            </Button>
+          </Box>
         ) : (
-          <div className="table-container">
-            <table className="tipo-permiso-table">
-              <thead>
-                <tr>
-                  <th>🆔 ID</th>
-                  <th>📝 Nombre del Tipo</th>
-                  <th>🏷️ Sub-tipo</th>
-                  <th>⚙️ Acciones</th>
-                </tr>
-              </thead>
-              <tbody>
+          <TableContainer component={Paper} variant="outlined" sx={{ borderRadius: 2 }}>
+            <Table>
+              <TableHead sx={{ bgcolor: 'primary.main' }}>
+                <TableRow>
+                  <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>ID</TableCell>
+                  <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Nombre del Tipo</TableCell>
+                  <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Sub-tipo</TableCell>
+                  <TableCell align="center" sx={{ color: 'white', fontWeight: 'bold' }}>Acciones</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
                 {tipos.map((tipo) => (
-                  <tr key={tipo.id} className="table-row">
-                    <td>
-                      <span className="id-badge">#{tipo.id}</span>
-                    </td>
-                    <td>
-                      <div className="tipo-info">
-                        <span className="tipo-name">{tipo.nombre}</span>
-                      </div>
-                    </td>
-                    <td>
-                      <div className="subtipo-info">
-                        {tipo.sub_tipo ? (
-                          <span className="subtipo-badge">{tipo.sub_tipo}</span>
-                        ) : (
-                          <span className="no-subtipo">Sin sub-tipo</span>
-                        )}
-                      </div>
-                    </td>
-                    <td>
-                      <div className="actions-group">
-                        <button 
-                          className="btn btn-edit" 
-                          onClick={() => handleEditar(tipo)}
-                          title="Editar tipo de permiso"
-                        >
-                          ✏️ Editar
-                        </button>
-                        <button 
-                          className="btn btn-delete" 
-                          onClick={() => handleEliminar(tipo.id)}
-                          title="Eliminar tipo de permiso"
-                        >
-                          🗑️ Eliminar
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
+                  <TableRow key={tipo.id} hover>
+                    <TableCell>
+                      <Chip label={`#${tipo.id}`} size="small" color="primary" variant="outlined" />
+                    </TableCell>
+                    <TableCell sx={{ fontWeight: 'medium' }}>{tipo.nombre}</TableCell>
+                    <TableCell>
+                      {tipo.sub_tipo ? (
+                        <Chip label={tipo.sub_tipo} size="small" color="success" />
+                      ) : (
+                        <Typography variant="body2" color="text.disabled" fontStyle="italic">
+                          Sin sub-tipo
+                        </Typography>
+                      )}
+                    </TableCell>
+                    <TableCell align="center">
+                      <Tooltip title="Editar">
+                        <IconButton color="warning" onClick={() => handleEditar(tipo)}>
+                          <MdEdit />
+                        </IconButton>
+                      </Tooltip>
+                      <Tooltip title="Eliminar">
+                        <IconButton color="error" onClick={() => handleEliminar(tipo.id)}>
+                          <MdDelete />
+                        </IconButton>
+                      </Tooltip>
+                    </TableCell>
+                  </TableRow>
                 ))}
-              </tbody>
-            </table>
-          </div>
+              </TableBody>
+            </Table>
+          </TableContainer>
         )}
-      </div>
-    </div>
+      </Paper>
+    </Container>
   );
 }
 

@@ -1,15 +1,33 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link as RouterLink } from 'react-router-dom';
+import { 
+  Box, 
+  Button, 
+  TextField, 
+  Typography, 
+  Container, 
+  Paper, 
+  Avatar, 
+  InputAdornment, 
+  Link,
+  useTheme // <-- Importamos useTheme de MUI
+} from '@mui/material';
+import { 
+  Person as PersonIcon, 
+  Lock as LockIcon 
+} from '@mui/icons-material';
+import { ToastContainer, toast } from 'react-toastify';
+
+// Importaciones de lógica propia
 import { loginUsuario } from '../services/api';
 import { isAuthenticated, getRol, loginUsuarioT } from '../utils/auth';
-import { ToastContainer, toast } from 'react-toastify';
 import LoadingModal from '../components/LoadingModal';
-import '../styles/Login.css';
 
 function Login() {
   const [form, setForm] = useState({ username: '', contrasena: '' });
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const theme = useTheme(); // <-- Detectamos el tema actual (light/dark)
 
   // === Función centralizada para redirigir según rol ===
   const redirigirPorRol = (rol = '') => {
@@ -32,19 +50,15 @@ function Login() {
 
   // === Manejo de inputs controlados ===
   const handleInputChange = (e) => {
-    setForm({ ...form, [e.target.id]: e.target.value });
+    setForm({ ...form, [e.target.name]: e.target.value });
   };
 
   // === Envío del formulario ===
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // Validación rápida
     if (!form.username || !form.contrasena) {
-      toast.warn('Por favor, complete todos los campos', {
-        position: "top-center",
-        autoClose: 3000,
-      });
+      toast.warn('Por favor, complete todos los campos', { position: "top-center" });
       return;
     }
 
@@ -55,86 +69,146 @@ function Login() {
       localStorage.setItem('rol', data.usuario.rol.toLowerCase());
       redirigirPorRol(data.usuario.rol);
     } catch (err) {
-      toast.error(err.message || 'Error al iniciar sesión', {
-        position: "top-center",
-        autoClose: 5000,
-      });
+      toast.error(err.message || 'Error al iniciar sesión', { position: "top-center" });
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="login-container">
-      <div className="login-form-section">
-        <div className="login-card">
-          <h2>Iniciar Sesión</h2>
+    <Box
+      sx={{
+        minHeight: '100vh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        // Fondo dinámico: Azul brillante en Light Mode, Azul profundo en Dark Mode
+        background: theme.palette.mode === 'dark' 
+          ? 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)' 
+          : 'linear-gradient(135deg, #1a237e 0%, #0d47a1 100%)',
+        padding: 2,
+      }}
+    >
+      <Container maxWidth="xs">
+        <Paper
+          elevation={6}
+          sx={{
+            padding: { xs: 3, sm: 6 },
+            borderRadius: 4,
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            // Color de tarjeta dinámico
+            backgroundColor: theme.palette.mode === 'dark' ? 'rgba(30, 41, 59, 0.9)' : 'rgba(255, 255, 255, 0.95)',
+            backdropFilter: 'blur(10px)',
+            transition: 'transform 0.3s ease',
+            '&:hover': {
+              transform: 'translateY(-5px)',
+            },
+          }}
+        >
+          <Typography 
+            variant="h4" 
+            component="h1" 
+            gutterBottom 
+            sx={{ 
+              color: theme.palette.mode === 'dark' ? '#38bdf8' : '#1a237e', 
+              fontWeight: 'bold' 
+            }}
+          >
+            Iniciar Sesión
+          </Typography>
 
-          <div className="login-header">
-            <img src="/logoIAI.png" alt="Logo" className="login-user-img" />
-          </div>
+          <Avatar
+            src="/logoIAI.png"
+            sx={{ width: 120, height: 120, mb: 3, boxShadow: 3, backgroundColor: 'white' }}
+          />
 
-          <form onSubmit={handleSubmit}>
-            <InputConIcono
-              id="username"
+          <Box component="form" onSubmit={handleSubmit} sx={{ width: '100%' }}>
+            <TextField
+              fullWidth
+              margin="normal"
+              name="username"
               label="Usuario"
-              type="text"
               placeholder="Ingrese su usuario"
               value={form.username}
               onChange={handleInputChange}
-              iconPath="M12 12c2.7 0 5-2.3 5-5s-2.3-5-5-5-5 2.3-5 5 2.3 5 5 5zm0 2c-3.3 0-10 1.7-10 5v3h20v-3c0-3.3-6.7-5-10-5z"
+              variant="outlined"
+              required
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <PersonIcon sx={{ color: 'var(--color-text-secondary)' }} />
+                  </InputAdornment>
+                ),
+              }}
+              sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
             />
 
-            <InputConIcono
-              id="contrasena"
+            <TextField
+              fullWidth
+              margin="normal"
+              name="contrasena"
               label="Contraseña"
               type="password"
               placeholder="Ingrese su contraseña"
               value={form.contrasena}
               onChange={handleInputChange}
-              iconPath="M12 17a2 2 0 1 0 0-4 2 2 0 0 0 0 4zm6-6h-1V9a5 5 0 0 0-10 0v2H6a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7a2 2 0 0 0-2-2zM8 9a4 4 0 0 1 8 0v2H8V9z"
+              variant="outlined"
+              required
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <LockIcon sx={{ color: 'var(--color-text-secondary)' }} />
+                  </InputAdornment>
+                ),
+              }}
+              sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
             />
 
-            {/* Botón dinámico: se deshabilita y cambia el texto en loading */}
-            <button type="submit" disabled={loading}>
+            <Button
+              type="submit"
+              fullWidth
+              variant="contained"
+              disabled={loading}
+              sx={{
+                mt: 3,
+                mb: 2,
+                py: 1.5,
+                borderRadius: 2,
+                fontWeight: 'bold',
+                // Botón dinámico
+                backgroundColor: theme.palette.mode === 'dark' ? '#0ea5e9' : '#1a237e',
+                '&:hover': { 
+                  backgroundColor: theme.palette.mode === 'dark' ? '#0284c7' : '#0d47a1' 
+                }
+              }}
+            >
               {loading ? "Ingresando..." : "Ingresar"}
-            </button>
+            </Button>
 
-            <div className="forgot-password-link">
-              <Link to="/solicitar-reset">¿Olvidó su contraseña?</Link>
-            </div>
-          </form>
-        </div>
-      </div>
+            <Box sx={{ textAlign: 'center', mt: 1 }}>
+              <Link
+                component={RouterLink}
+                to="/solicitar-reset"
+                sx={{
+                  color: theme.palette.mode === 'dark' ? '#f59e0b' : '#d97706',
+                  textDecoration: 'none',
+                  fontSize: '0.9rem',
+                  fontWeight: 500,
+                  '&:hover': { textDecoration: 'underline' }
+                }}
+              >
+                ¿Olvidó su contraseña?
+              </Link>
+            </Box>
+          </Box>
+        </Paper>
+      </Container>
 
-      {/* Contenedor global para notificaciones */}
       <ToastContainer />
-      
-      {/* Modal de carga */}
       <LoadingModal visible={loading} />
-    </div>
-  );
-}
-
-// === Componente Input con Icono (reutilizable) ===
-function InputConIcono({ id, label, type, placeholder, value, onChange, iconPath }) {
-  return (
-    <div className="form-group">
-      <label htmlFor={id}>{label}</label>
-      <div className="input-with-icon">
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-          <path d={iconPath} />
-        </svg>
-        <input
-          type={type}
-          id={id}
-          value={value}
-          onChange={onChange}
-          required
-          placeholder={placeholder}
-        />
-      </div>
-    </div>
+    </Box>
   );
 }
 

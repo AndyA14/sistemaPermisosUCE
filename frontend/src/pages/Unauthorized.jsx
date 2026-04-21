@@ -1,6 +1,17 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import '../styles/Unauthorized.css';
+import { 
+  Box, 
+  Container, 
+  Paper, 
+  Typography, 
+  Button, 
+  Stack 
+} from '@mui/material';
+import { 
+  LockOutlined as LockIcon, 
+  WarningAmber as WarningIcon 
+} from '@mui/icons-material';
 
 function Unauthorized() {
   const navigate = useNavigate();
@@ -8,37 +19,79 @@ function Unauthorized() {
   const handleHome = () => navigate('/');
 
   return (
-    <div className="unauthorized-container">
-      <div className="unauthorized-card">
-        <div className="unauthorized-card__icons">
-          <div className="unauthorized-card__icon-lock">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-              <path d="M12 2a6 6 0 0 0-6 6v4H5v10h14V12h-1V8a6 6 0 0 0-6-6zm0 2a4 4 0 0 1 4 4v4H8V8a4 4 0 0 1 4-4zm-1 7h2v4h-2v-4z"/>
-            </svg>
-          </div>
-          <div className="unauthorized-card__icon-warning">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-              <path d="M1 21h22L12 2 1 21zm12-3h-2v2h2v-2zm0-8h-2v6h2v-6z"/>
-            </svg>
-          </div>
-        </div>
+    <Box
+      sx={{
+        minHeight: '100vh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: 'var(--color-bg)',
+        background: 'linear-gradient(135deg, rgba(231, 76, 60, 0.05) 0%, rgba(0, 0, 0, 0) 100%)',
+        padding: 2,
+      }}
+    >
+      <Container maxWidth="sm">
+        <Paper
+          elevation={4}
+          sx={{
+            padding: { xs: 4, sm: 6 },
+            borderRadius: 4,
+            textAlign: 'center',
+            backgroundColor: 'var(--card-bg, #ffffff)',
+            color: 'var(--color-text)',
+            borderTop: '5px solid var(--color-danger, #e74c3c)',
+          }}
+        >
+          <Box sx={{ position: 'relative', display: 'inline-flex', mb: 3 }}>
+            <LockIcon sx={{ fontSize: 60, color: 'var(--color-text-secondary)', opacity: 0.5 }} />
+            <WarningIcon 
+              sx={{ 
+                fontSize: 35, 
+                color: 'var(--color-danger, #e74c3c)', 
+                position: 'absolute', 
+                bottom: -5, 
+                right: -10,
+                backgroundColor: 'var(--card-bg)',
+                borderRadius: '50%'
+              }} 
+            />
+          </Box>
 
-        <h2 className="unauthorized-card__title">Acceso No Autorizado</h2>
-        <p className="unauthorized-card__message">
-          No tienes permisos para acceder a esta sección.
-        </p>
-        <p className="unauthorized-card__info">
-          Si crees que esto es un error, contacta con el administrador de tu sistema
-          o verifica tus credenciales.
-        </p>
+          <Typography variant="h4" component="h2" gutterBottom sx={{ fontWeight: 'bold' }}>
+            Acceso No Autorizado
+          </Typography>
+          
+          <Typography variant="h6" sx={{ color: 'var(--color-danger, #e74c3c)', mb: 2, fontWeight: 500 }}>
+            No tienes permisos para acceder a esta sección.
+          </Typography>
+          
+          <Typography variant="body1" sx={{ color: 'var(--color-text-secondary)', mb: 4 }}>
+            Si crees que esto es un error, contacta con el administrador de tu sistema o verifica tus credenciales.
+          </Typography>
 
-        <div className="unauthorized-card__buttons">
-          <button className="unauthorized-card__button secondary" onClick={handleHome}>
-            Ir al Inicio
-          </button>
-        </div>
-      </div>
-    </div>
+          <Stack direction="row" justifyContent="center">
+            <Button
+              variant="outlined"
+              onClick={handleHome}
+              size="large"
+              sx={{
+                borderRadius: 2,
+                fontWeight: 'bold',
+                px: 4,
+                color: 'var(--color-text)',
+                borderColor: 'var(--color-border)',
+                '&:hover': {
+                  borderColor: 'var(--color-text)',
+                  backgroundColor: 'rgba(0,0,0,0.05)'
+                }
+              }}
+            >
+              Ir al Inicio
+            </Button>
+          </Stack>
+        </Paper>
+      </Container>
+    </Box>
   );
 }
 

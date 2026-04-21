@@ -1,8 +1,24 @@
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { 
+  Box, 
+  Button, 
+  TextField, 
+  Typography, 
+  Container, 
+  Paper, 
+  InputAdornment, 
+  Alert,
+  IconButton
+} from '@mui/material';
+import { 
+  Lock as LockIcon,
+  Visibility,
+  VisibilityOff
+} from '@mui/icons-material';
+
 import { resetearContrasena } from '../services/api';
 import LoadingModal from '../components/LoadingModal';
-import '../styles/Login.css';
 
 function ResetPassword() {
   const { token } = useParams();
@@ -13,6 +29,10 @@ function ResetPassword() {
   const [mensaje, setMensaje] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  
+  // Estados para mostrar contraseñas (mejora UX)
+  const [showPass, setShowPass] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
 
   const validarContrasena = (pwd) => {
     return pwd.length >= 8 &&
@@ -51,65 +71,119 @@ function ResetPassword() {
   };
 
   return (
-    <div className="login-container">
-      <div className="login-form-section">
-        <div className="login-card">
-          <h2>Restablecer Contraseña</h2>
-          <form onSubmit={handleSubmit}>
+    <Box
+      sx={{
+        minHeight: '100vh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        background: 'var(--login-bg-gradient, linear-gradient(135deg, #1a237e 0%, #0d47a1 100%))',
+        padding: 2,
+      }}
+    >
+      <Container maxWidth="xs">
+        <Paper
+          elevation={6}
+          sx={{
+            padding: { xs: 3, sm: 5 },
+            borderRadius: 4,
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            backgroundColor: 'var(--card-bg, rgba(255, 255, 255, 0.07))',
+            backdropFilter: 'blur(10px)',
+            color: 'var(--color-text)',
+            transition: 'transform 0.3s ease',
+            '&:hover': {
+              transform: 'translateY(-5px)',
+            },
+          }}
+        >
+          <Typography variant="h5" component="h1" gutterBottom sx={{ color: 'var(--color-link)', fontWeight: 'bold', mb: 3, textAlign: 'center' }}>
+            Restablecer Contraseña
+          </Typography>
 
-            <InputConIcono
-              id="contrasena"
+          <Box component="form" onSubmit={handleSubmit} sx={{ width: '100%' }}>
+            
+            {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+            {mensaje && <Alert severity="success" sx={{ mb: 2 }}>{mensaje}</Alert>}
+
+            <TextField
+              fullWidth
+              margin="normal"
               label="Nueva Contraseña"
-              type="password"
+              type={showPass ? 'text' : 'password'}
               placeholder="Ingrese nueva contraseña"
               value={contrasena}
               onChange={(e) => setContrasena(e.target.value)}
-              iconPath="M12 17a2 2 0 1 0 0-4 2 2 0 0 0 0 4zm6-6h-1V9a5 5 0 0 0-10 0v2H6a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7a2 2 0 0 0-2-2zM8 9a4 4 0 0 1 8 0v2H8V9z"
+              variant="outlined"
+              required
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <LockIcon sx={{ color: 'var(--icon-color)' }} />
+                  </InputAdornment>
+                ),
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <IconButton onClick={() => setShowPass(!showPass)} edge="end">
+                      {showPass ? <VisibilityOff /> : <Visibility />}
+                    </IconButton>
+                  </InputAdornment>
+                )
+              }}
+              sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
             />
 
-            <InputConIcono
-              id="confirmar"
+            <TextField
+              fullWidth
+              margin="normal"
               label="Confirmar Contraseña"
-              type="password"
+              type={showConfirm ? 'text' : 'password'}
               placeholder="Repita la contraseña"
               value={confirmar}
               onChange={(e) => setConfirmar(e.target.value)}
-              iconPath="M12 17a2 2 0 1 0 0-4 2 2 0 0 0 0 4zm6-6h-1V9a5 5 0 0 0-10 0v2H6a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7a2 2 0 0 0-2-2zM8 9a4 4 0 0 1 8 0v2H8V9z"
+              variant="outlined"
+              required
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <LockIcon sx={{ color: 'var(--icon-color)' }} />
+                  </InputAdornment>
+                ),
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <IconButton onClick={() => setShowConfirm(!showConfirm)} edge="end">
+                      {showConfirm ? <VisibilityOff /> : <Visibility />}
+                    </IconButton>
+                  </InputAdornment>
+                )
+              }}
+              sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
             />
 
-            {error && <p className="error-msg">{error}</p>}
-            {mensaje && <p className="success-msg">{mensaje}</p>}
-
-            <button type="submit" disabled={loading}>
+            <Button
+              type="submit"
+              fullWidth
+              variant="contained"
+              disabled={loading}
+              sx={{
+                mt: 3,
+                mb: 2,
+                py: 1.5,
+                borderRadius: 2,
+                fontWeight: 'bold',
+                backgroundColor: 'var(--color-link)',
+                '&:hover': { backgroundColor: 'var(--color-link-hover)' }
+              }}
+            >
               {loading ? "Restableciendo..." : "Restablecer"}
-            </button>
-          </form>
-        </div>
-      </div>
+            </Button>
+          </Box>
+        </Paper>
+      </Container>
       <LoadingModal visible={loading} />
-    </div>
-  );
-}
-
-// Componente reutilizable InputConIcono
-function InputConIcono({ id, label, type, placeholder, value, onChange, iconPath }) {
-  return (
-    <div className="form-group">
-      <label htmlFor={id}>{label}</label>
-      <div className="input-with-icon">
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-          <path d={iconPath} />
-        </svg>
-        <input
-          type={type}
-          id={id}
-          value={value}
-          onChange={onChange}
-          required
-          placeholder={placeholder}
-        />
-      </div>
-    </div>
+    </Box>
   );
 }
 

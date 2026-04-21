@@ -33,12 +33,15 @@ import {
   ToggleOff as ToggleOffIcon,
   PeopleAlt as PeopleIcon,
   CheckCircleOutline,
-  CancelOutlined
+  CancelOutlined,
+  Save as SaveIcon,
+  Add as AddIcon,
+  Close as CloseIcon
 } from '@mui/icons-material';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
-// Importaciones ajustadas directamente al src
+// Importaciones locales
 import {
   getUsuarios,
   crearUsuario,
@@ -135,16 +138,16 @@ function GestionUsuarios() {
     try {
       if (modoEditar) {
         await actualizarUsuario(usuarioEditarId, { ...form });
-        toast.success('✅ Usuario actualizado correctamente');
+        toast.success('Usuario actualizado correctamente');
       } else {
         await crearUsuario(form);
-        toast.success('✅ Usuario creado correctamente');
+        toast.success('Usuario creado correctamente');
       }
       resetForm();
       await cargarUsuarios();
     } catch (error) {
       console.error(error);
-      toast.error('❌ Error al guardar usuario');
+      toast.error('Error al guardar usuario');
     } finally {
       setCargando(false);
     }
@@ -170,15 +173,15 @@ function GestionUsuarios() {
     try {
       if (estadoActual) {
         await desactivarUsuario(id);
-        toast.info('⚠️ Usuario desactivado');
+        toast.info('Usuario desactivado');
       } else {
         await activarUsuario(id);
-        toast.success('✅ Usuario activado');
+        toast.success('Usuario activado');
       }
       await cargarUsuarios();
     } catch (error) {
       console.error(error);
-      toast.error('❌ Error al cambiar estado del usuario');
+      toast.error('Error al cambiar estado del usuario');
     } finally {
       setCargando(false);
     }
@@ -209,7 +212,7 @@ function GestionUsuarios() {
     docente: 'Docente',
     admin: 'Administrador',
     director: 'Director',
-    tthh: 'TTHH',
+    tthh: 'Talento Humano',
     dti: 'DTIC',
   };
 
@@ -258,7 +261,7 @@ function GestionUsuarios() {
       <Chip 
         label={ROLES_LABELS[rol] || rol} 
         size="small" 
-        sx={{ bgcolor: colors.bg, color: colors.text, fontWeight: 'bold', textTransform: 'capitalize' }} 
+        sx={{ bgcolor: colors.bg, color: colors.text, fontWeight: 'bold' }} 
       />
     );
   };
@@ -270,13 +273,13 @@ function GestionUsuarios() {
 
       <Container maxWidth="xl">
         
-        {/* 🎯 Header con estadísticas */}
+        {/* Header con estadísticas */}
         <Box sx={{ mb: 5 }}>
           <Typography variant="h3" align="center" gutterBottom sx={{ fontWeight: 'bold', color: 'var(--color-text)' }}>
-            👥 Gestión de Usuarios
+            Gestión de Usuarios
           </Typography>
           <Typography variant="h6" align="center" sx={{ color: 'var(--color-text-secondary)', mb: 4 }}>
-            Administra usuarios del sistema de permisos
+            Administración del sistema de permisos
           </Typography>
 
           <Grid container spacing={3} justifyContent="center">
@@ -307,7 +310,7 @@ function GestionUsuarios() {
           </Grid>
         </Box>
 
-        {/* 🔍 Filtros */}
+        {/* Filtros */}
         <Paper elevation={2} sx={{ p: 3, mb: 4, borderRadius: 3, backgroundColor: 'var(--card-bg)' }}>
           <Grid container spacing={3} alignItems="center">
             <Grid item xs={12} md={5}>
@@ -347,20 +350,20 @@ function GestionUsuarios() {
           </Grid>
         </Paper>
 
-        {/* ✨ Formulario */}
+        {/* Formulario */}
         <Paper elevation={3} sx={{ p: 4, mb: 5, borderRadius: 3, backgroundColor: 'var(--card-bg)' }}>
           <Typography variant="h5" align="center" gutterBottom sx={{ fontWeight: 600, color: 'var(--color-text)' }}>
-            {modoEditar ? '✏️ Editar Usuario' : '➕ Crear Nuevo Usuario'}
+            {modoEditar ? 'Editar Usuario' : 'Crear Nuevo Usuario'}
           </Typography>
           <Typography variant="body2" align="center" sx={{ color: 'var(--color-text-secondary)', mb: 4 }}>
-            Complete los datos del usuario
+            Complete los datos correspondientes en el formulario
           </Typography>
           
           <Box component="form" onSubmit={handleGuardar}>
             <Grid container spacing={4}>
               
               <Grid item xs={12} md={6}>
-                <Typography variant="subtitle1" sx={{ fontWeight: 'bold', mb: 2, color: 'var(--color-text)' }}>👤 Información Personal</Typography>
+                <Typography variant="subtitle1" sx={{ fontWeight: 'bold', mb: 2, color: 'var(--color-text)' }}>Información Personal</Typography>
                 <Stack spacing={2}>
                   <TextField
                     name="nombres"
@@ -384,7 +387,7 @@ function GestionUsuarios() {
               </Grid>
 
               <Grid item xs={12} md={6}>
-                <Typography variant="subtitle1" sx={{ fontWeight: 'bold', mb: 2, color: 'var(--color-text)' }}>🔐 Datos de Acceso</Typography>
+                <Typography variant="subtitle1" sx={{ fontWeight: 'bold', mb: 2, color: 'var(--color-text)' }}>Datos de Acceso</Typography>
                 <Stack spacing={2}>
                   <TextField
                     name="username"
@@ -412,7 +415,7 @@ function GestionUsuarios() {
               </Grid>
 
               <Grid item xs={12} md={6}>
-                <Typography variant="subtitle1" sx={{ fontWeight: 'bold', mb: 2, color: 'var(--color-text)' }}>📞 Información de Contacto</Typography>
+                <Typography variant="subtitle1" sx={{ fontWeight: 'bold', mb: 2, color: 'var(--color-text)' }}>Información de Contacto</Typography>
                 <Stack spacing={2}>
                   <TextField
                     type="email"
@@ -437,7 +440,7 @@ function GestionUsuarios() {
               </Grid>
 
               <Grid item xs={12} md={6}>
-                <Typography variant="subtitle1" sx={{ fontWeight: 'bold', mb: 2, color: 'var(--color-text)' }}>👔 Rol y Extras</Typography>
+                <Typography variant="subtitle1" sx={{ fontWeight: 'bold', mb: 2, color: 'var(--color-text)' }}>Rol y Extras</Typography>
                 <Stack spacing={2}>
                   <TextField
                     name="direccion"
@@ -457,11 +460,11 @@ function GestionUsuarios() {
                     fullWidth
                     InputProps={{ startAdornment: <InputAdornment position="start"><RoleIcon /></InputAdornment> }}
                   >
-                    <MenuItem value="docente">👨‍🏫 Docente</MenuItem>
-                    <MenuItem value="admin">👑 Administrador</MenuItem>
-                    <MenuItem value="director">🎯 Director</MenuItem>
-                    <MenuItem value="tthh">👥 Talento Humano</MenuItem>
-                    <MenuItem value="dti">💻 DTIC</MenuItem>
+                    <MenuItem value="docente">Docente</MenuItem>
+                    <MenuItem value="admin">Administrador</MenuItem>
+                    <MenuItem value="director">Director</MenuItem>
+                    <MenuItem value="tthh">Talento Humano</MenuItem>
+                    <MenuItem value="dti">DTIC</MenuItem>
                   </TextField>
                 </Stack>
               </Grid>
@@ -473,29 +476,31 @@ function GestionUsuarios() {
                 type="submit"
                 variant="contained"
                 size="large"
-                sx={{ background: 'linear-gradient(135deg, var(--btn-crear-bg, #0ea5e9), #0284c7)', fontWeight: 'bold', px: 4 }}
+                startIcon={modoEditar ? <SaveIcon /> : <AddIcon />}
+                sx={{ background: 'linear-gradient(135deg, var(--btn-crear-bg, #0ea5e9), #0284c7)', fontWeight: 'bold', px: 4, textTransform: 'none' }}
               >
-                {modoEditar ? '💾 Actualizar Usuario' : '➕ Crear Usuario'}
+                {modoEditar ? 'Actualizar Usuario' : 'Crear Usuario'}
               </Button>
               {modoEditar && (
                 <Button
                   variant="outlined"
                   size="large"
                   onClick={resetForm}
-                  sx={{ color: 'var(--color-text)', borderColor: 'var(--color-border)', fontWeight: 'bold' }}
+                  startIcon={<CloseIcon />}
+                  sx={{ color: 'var(--color-text)', borderColor: 'var(--color-border)', fontWeight: 'bold', textTransform: 'none' }}
                 >
-                  ❌ Cancelar
+                  Cancelar
                 </Button>
               )}
             </Box>
           </Box>
         </Paper>
 
-        {/* 📊 Tabla de usuarios */}
+        {/* Tabla de usuarios */}
         <Paper elevation={3} sx={{ borderRadius: 3, overflow: 'hidden', backgroundColor: 'var(--card-bg)' }}>
           <Box sx={{ p: 3, borderBottom: '1px solid var(--color-border)' }}>
             <Typography variant="h5" sx={{ fontWeight: 600, color: 'var(--color-text)' }}>
-              📋 Lista de Usuarios
+              Lista de Usuarios
             </Typography>
           </Box>
 
@@ -532,8 +537,8 @@ function GestionUsuarios() {
                         <Typography variant="caption" sx={{ color: 'var(--color-text-secondary)', fontFamily: 'monospace' }}>CI: {u.ci}</Typography>
                       </TableCell>
                       <TableCell>
-                        <Typography variant="body2" sx={{ color: 'var(--color-text)' }}>📧 {u.correo}</Typography>
-                        <Typography variant="body2" sx={{ color: 'var(--color-text-secondary)' }}>📱 {u.telefono}</Typography>
+                        <Typography variant="body2" sx={{ color: 'var(--color-text)' }}><EmailIcon sx={{ fontSize: 16, verticalAlign: 'text-bottom', mr: 0.5 }}/>{u.correo}</Typography>
+                        <Typography variant="body2" sx={{ color: 'var(--color-text-secondary)' }}><PhoneIcon sx={{ fontSize: 16, verticalAlign: 'text-bottom', mr: 0.5 }}/>{u.telefono}</Typography>
                       </TableCell>
                       <TableCell>
                         <Chip label={`@${u.username}`} size="small" variant="outlined" sx={{ fontWeight: 'bold', color: 'var(--color-text)' }} />
@@ -543,7 +548,7 @@ function GestionUsuarios() {
                       </TableCell>
                       <TableCell>
                         <Chip 
-                          label={u.estado ? '✅ Activo' : '❌ Inactivo'} 
+                          label={u.estado ? 'Activo' : 'Inactivo'} 
                           color={u.estado ? 'success' : 'error'} 
                           size="small" 
                           sx={{ fontWeight: 'bold' }} 

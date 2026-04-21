@@ -15,13 +15,14 @@ import {
   InputAdornment,
   Alert,
   Badge,
-  Container
+  Container,
+  useTheme // <-- Importamos useTheme de MUI
 } from '@mui/material';
 import {
   PersonOutline,
   MailOutline,
   PhoneOutlined,
-  BadgeOutlined, // Alternativa para Identification
+  BadgeOutlined, 
   LocationOnOutlined,
   LockOutlined,
   PhotoCamera,
@@ -45,6 +46,7 @@ function Perfil() {
   const [usuario, setUsuario] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const theme = useTheme(); // <-- Usamos el tema actual
 
   // Estado modal cambiar contraseña
   const [showModal, setShowModal] = useState(false);
@@ -55,7 +57,6 @@ function Perfil() {
   const [passSuccess, setPassSuccess] = useState('');
   const [changingPass, setChangingPass] = useState(false);
 
-  // Estados para mostrar/ocultar contraseñas
   const [showOldPass, setShowOldPass] = useState(false);
   const [showNewPass, setShowNewPass] = useState(false);
   const [showConfirmPass, setShowConfirmPass] = useState(false);
@@ -126,8 +127,10 @@ function Perfil() {
         border: '1px solid var(--color-border)',
         transition: 'all 0.3s ease',
         '&:hover': {
-          borderColor: 'var(--btn-crear-bg)',
-          boxShadow: '0 2px 8px rgba(52, 152, 219, 0.1)',
+          borderColor: theme.palette.mode === 'dark' ? '#0ea5e9' : '#2980b9',
+          boxShadow: theme.palette.mode === 'dark' 
+            ? '0 2px 8px rgba(14, 165, 233, 0.2)' 
+            : '0 2px 8px rgba(52, 152, 219, 0.1)',
         }
       }}
     >
@@ -136,7 +139,9 @@ function Perfil() {
           width: 48,
           height: 48,
           borderRadius: 2,
-          background: 'linear-gradient(135deg, var(--btn-crear-bg), #2980b9)',
+          background: theme.palette.mode === 'dark' 
+            ? 'linear-gradient(135deg, #0284c7, #0ea5e9)' 
+            : 'linear-gradient(135deg, #0ea5e9, #2980b9)',
           color: 'white',
           display: 'flex',
           alignItems: 'center',
@@ -159,7 +164,12 @@ function Perfil() {
   );
 
   return (
-    <Box sx={{ minHeight: '100vh', py: 4, background: 'linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)' }}>
+    <Box sx={{ 
+      minHeight: '100vh', 
+      py: 4, 
+      // Fondo global dinámico
+      background: theme.palette.mode === 'dark' ? 'var(--color-bg-primary)' : 'linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)' 
+    }}>
       <LoadingModal visible={loading || changingPass} />
 
       <Container maxWidth="md">
@@ -181,10 +191,14 @@ function Perfil() {
             {/* Header del Perfil */}
             <Box
               sx={{
-                background: 'linear-gradient(135deg, var(--btn-crear-bg) 0%, #2980b9 100%)',
+                // Header dinámico
+                background: theme.palette.mode === 'dark' 
+                  ? 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)' 
+                  : 'linear-gradient(135deg, #0ea5e9 0%, #2980b9 100%)',
                 color: 'white',
                 p: { xs: 3, sm: 4 },
-                position: 'relative'
+                position: 'relative',
+                borderBottom: theme.palette.mode === 'dark' ? '1px solid #334155' : 'none'
               }}
             >
               <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, alignItems: 'center', gap: 4, position: 'relative', zIndex: 1 }}>
@@ -195,10 +209,10 @@ function Perfil() {
                   badgeContent={
                     <IconButton
                       sx={{
-                        bgcolor: 'var(--btn-crear-bg)',
+                        bgcolor: theme.palette.mode === 'dark' ? '#0ea5e9' : '#2980b9',
                         color: 'white',
                         border: '3px solid white',
-                        '&:hover': { bgcolor: '#2980b9', transform: 'scale(1.1)' },
+                        '&:hover': { bgcolor: '#0284c7', transform: 'scale(1.1)' },
                         transition: 'all 0.3s'
                       }}
                     >
@@ -220,7 +234,7 @@ function Perfil() {
                 </Badge>
 
                 <Box sx={{ textAlign: { xs: 'center', sm: 'left' } }}>
-                  <Typography variant="h3" sx={{ fontWeight: 700, mb: 1, textShadow: '0 2px 4px rgba(0, 0, 0, 0.1)' }}>
+                  <Typography variant="h3" sx={{ fontWeight: 700, mb: 1, textShadow: '0 2px 4px rgba(0, 0, 0, 0.3)' }}>
                     {usuario.nombres} {usuario.apellidos}
                   </Typography>
                   <Box
@@ -292,7 +306,9 @@ function Perfil() {
                     borderRadius: 3,
                     fontWeight: 600,
                     textTransform: 'none',
-                    background: 'linear-gradient(135deg, var(--btn-crear-bg), #2980b9)',
+                    background: theme.palette.mode === 'dark' 
+                      ? 'linear-gradient(135deg, #0284c7, #0ea5e9)' 
+                      : 'linear-gradient(135deg, #0ea5e9, #2980b9)',
                     boxShadow: '0 4px 12px rgba(52, 152, 219, 0.2)',
                     '&:hover': {
                       transform: 'translateY(-2px)',
@@ -382,7 +398,10 @@ function Perfil() {
             type="submit" 
             form="password-form" 
             variant="contained" 
-            sx={{ borderRadius: 2, background: 'linear-gradient(135deg, var(--btn-crear-bg), #2980b9)' }}
+            sx={{ 
+              borderRadius: 2, 
+              background: theme.palette.mode === 'dark' ? 'linear-gradient(135deg, #0284c7, #0ea5e9)' : 'linear-gradient(135deg, #0ea5e9, #2980b9)'
+            }}
           >
             Guardar Cambios
           </Button>

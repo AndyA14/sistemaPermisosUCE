@@ -9,7 +9,8 @@ import {
   Paper, 
   Avatar, 
   InputAdornment, 
-  Link 
+  Link,
+  useTheme // <-- Importamos useTheme de MUI
 } from '@mui/material';
 import { 
   Person as PersonIcon, 
@@ -26,6 +27,7 @@ function Login() {
   const [form, setForm] = useState({ username: '', contrasena: '' });
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const theme = useTheme(); // <-- Detectamos el tema actual (light/dark)
 
   // === Función centralizada para redirigir según rol ===
   const redirigirPorRol = (rol = '') => {
@@ -80,7 +82,10 @@ function Login() {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        background: 'var(--login-bg-gradient, linear-gradient(135deg, #1a237e 0%, #0d47a1 100%))', // Fallback si no hay variable
+        // Fondo dinámico: Azul brillante en Light Mode, Azul profundo en Dark Mode
+        background: theme.palette.mode === 'dark' 
+          ? 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)' 
+          : 'linear-gradient(135deg, #1a237e 0%, #0d47a1 100%)',
         padding: 2,
       }}
     >
@@ -93,22 +98,30 @@ function Login() {
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
-            backgroundColor: 'var(--card-bg, rgba(255, 255, 255, 0.07))',
+            // Color de tarjeta dinámico
+            backgroundColor: theme.palette.mode === 'dark' ? 'rgba(30, 41, 59, 0.9)' : 'rgba(255, 255, 255, 0.95)',
             backdropFilter: 'blur(10px)',
-            color: 'var(--color-text)',
             transition: 'transform 0.3s ease',
             '&:hover': {
               transform: 'translateY(-5px)',
             },
           }}
         >
-          <Typography variant="h4" component="h1" gutterBottom sx={{ color: 'var(--color-link)', fontWeight: 'bold' }}>
+          <Typography 
+            variant="h4" 
+            component="h1" 
+            gutterBottom 
+            sx={{ 
+              color: theme.palette.mode === 'dark' ? '#38bdf8' : '#1a237e', 
+              fontWeight: 'bold' 
+            }}
+          >
             Iniciar Sesión
           </Typography>
 
           <Avatar
             src="/logoIAI.png"
-            sx={{ width: 120, height: 120, mb: 3, boxShadow: 3 }}
+            sx={{ width: 120, height: 120, mb: 3, boxShadow: 3, backgroundColor: 'white' }}
           />
 
           <Box component="form" onSubmit={handleSubmit} sx={{ width: '100%' }}>
@@ -125,7 +138,7 @@ function Login() {
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">
-                    <PersonIcon sx={{ color: 'var(--icon-color)' }} />
+                    <PersonIcon sx={{ color: 'var(--color-text-secondary)' }} />
                   </InputAdornment>
                 ),
               }}
@@ -146,7 +159,7 @@ function Login() {
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">
-                    <LockIcon sx={{ color: 'var(--icon-color)' }} />
+                    <LockIcon sx={{ color: 'var(--color-text-secondary)' }} />
                   </InputAdornment>
                 ),
               }}
@@ -164,8 +177,11 @@ function Login() {
                 py: 1.5,
                 borderRadius: 2,
                 fontWeight: 'bold',
-                backgroundColor: 'var(--color-link)',
-                '&:hover': { backgroundColor: 'var(--color-link-hover)' }
+                // Botón dinámico
+                backgroundColor: theme.palette.mode === 'dark' ? '#0ea5e9' : '#1a237e',
+                '&:hover': { 
+                  backgroundColor: theme.palette.mode === 'dark' ? '#0284c7' : '#0d47a1' 
+                }
               }}
             >
               {loading ? "Ingresando..." : "Ingresar"}
@@ -176,9 +192,10 @@ function Login() {
                 component={RouterLink}
                 to="/solicitar-reset"
                 sx={{
-                  color: 'var(--btn-editar-bg)',
+                  color: theme.palette.mode === 'dark' ? '#f59e0b' : '#d97706',
                   textDecoration: 'none',
                   fontSize: '0.9rem',
+                  fontWeight: 500,
                   '&:hover': { textDecoration: 'underline' }
                 }}
               >

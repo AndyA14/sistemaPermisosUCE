@@ -31,26 +31,12 @@ services:
     depends_on:
       postgresql:
         condition: service_healthy
+    # INYECCIÓN DIRECTA DE VARIABLES:
+    env_file:
+      - ./backend/.env
+    # Sobreescribimos solo lo necesario para la red de Docker
     environment:
-      PORT: 3000
       DB_HOST: postgresql
-      DB_PORT: 5432
-      DB_USER: postgres
-      DB_PASSWORD: example
-      DB_NAME: iai_sistemapermisos
-      JWT_SECRET: 586E3272357538782F413F4428472B4B6250655368566B597033733676397924
-      URL_FRONTEND: http://192.168.0.179
-      EMAIL_ADDRESS: correo@gmail.com
-      EMAIL_PERMISOS: correo+permisos@gmail.com
-      EMAIL_DIRECTOR: correo+director@gmail.com
-      EMAIL_SOPORTE: correo+soporte@gmail.com
-      EMAIL_PASSWORD: ttyaqbecuelhmxzi
-      IMAP_HOST: imap.gmail.com
-      IMAP_PORT: 993
-      IMAP_SECURE: "true"
-      # --- VARIABLES DE SENDGRID ---
-      SENDGRID_API_KEY: "${SENDGRID_API_KEY}"
-      SENDGRID_SENDER: "${SENDGRID_SENDER}"
 
   frontend:
     build:
@@ -63,3 +49,6 @@ services:
       - "80:80"
     depends_on:
       - backend
+    # INYECCIÓN PARA EL FRONTEND:
+    env_file:
+      - ./frontend/.env

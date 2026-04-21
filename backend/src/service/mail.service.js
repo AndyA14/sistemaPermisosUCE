@@ -79,18 +79,19 @@ async function obtenerCorreosPorAlias(alias) {
 
 /**
  * Procesa correos y permisos unificados para TTHH.
+ * Forzamos el alias 'permisos' sin importar qué envíe el frontend.
  */
-async function obtenerCorreosUnificadosTTHH(alias = 'director') {
-  return await procesarCorreosYPermisosPorRol(alias, false);
+async function obtenerCorreosUnificadosTTHH() {
+  return await procesarCorreosYPermisosPorRol('permisos', false);
 }
 
 /**
  * Procesa correos y permisos unificados para Director.
+ * Forzamos el alias 'director' sin importar qué envíe el frontend.
  */
-async function obtenerCorreosUnificadosDirector(alias = 'director') {
-  return await procesarCorreosYPermisosPorRol(alias, true);
+async function obtenerCorreosUnificadosDirector() {
+  return await procesarCorreosYPermisosPorRol('director', true);
 }
-
 module.exports = {
   enviarCorreo,
   obtenerCorreosPorAlias,

@@ -1,1 +1,4 @@
 postgresql_data/
+# Ignorar variables de entorno
+backend/.env
+frontend/.env

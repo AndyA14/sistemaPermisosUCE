@@ -1,8 +1,8 @@
-// controllers/mail.controller.js
+// src/controller/mail.controller.js
 const mailService = require('../service/mail.service');
 
 /**
- * Controlador para obtener correos por alias.
+ * Controlador para obtener correos por alias (vía IMAP Gmail).
  */
 async function obtenerCorreosPorAlias(req, res) {
   const alias = req.params.alias;
@@ -24,7 +24,7 @@ async function obtenerCorreosPorAlias(req, res) {
 }
 
 /**
- * Controlador para obtener correos unificados con permisos.
+ * Controlador para obtener correos unificados con permisos para TTHH.
  */
 async function getCorreosUnificadosTTHH(req, res) {
   try {
@@ -32,13 +32,13 @@ async function getCorreosUnificadosTTHH(req, res) {
     const resultado = await mailService.obtenerCorreosUnificadosTTHH(alias);
     res.json(resultado);
   } catch (error) {
-    console.error('Error en getCorreosUnificados:', error);
+    console.error('Error en getCorreosUnificadosTTHH:', error);
     res.status(500).json({ error: 'Error interno del servidor' });
   }
 }
 
 /**
- * Controlador para obtener correos unificados con permisos.
+ * Controlador para obtener correos unificados con permisos para Director.
  */
 async function getCorreosUnificadosDirector(req, res) {
   try {
@@ -46,7 +46,7 @@ async function getCorreosUnificadosDirector(req, res) {
     const resultado = await mailService.obtenerCorreosUnificadosDirector(alias);
     res.json(resultado);
   } catch (error) {
-    console.error('Error en getCorreosUnificados:', error);
+    console.error('Error en getCorreosUnificadosDirector:', error);
     res.status(500).json({ error: 'Error interno del servidor' });
   }
 }

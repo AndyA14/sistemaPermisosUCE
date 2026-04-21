@@ -16,13 +16,19 @@ async function procesarCorreosYPermisosPorRol(alias, revisadoTTHH = null) {
     .map(c => parseCorreoHTML(c.html)?.cedula)
     .filter(Boolean);
 
+  // 👇 PROTECCIÓN CRÍTICA PARA EVITAR ERROR CUANDO NO HAY CÉDULAS 👇
+  if (cedulas.length === 0) {
+    console.log(`⚠️ No se encontraron cédulas en los correos del alias: ${alias}`);
+    return { alias, total: 0, resultados: [] };
+  }
+
   const hoy = new Date();
   const mes = hoy.getMonth() + 1;
   const anio = hoy.getFullYear();
 
   const permisoRepo = AppDataSource.getRepository(Permiso);
 
-  // Consultar permisos pendientes filtrados por mes y año en fecha_solicitud
+  // Consultar permisos pendientes
   let queryPendientes = permisoRepo.createQueryBuilder('permiso')
     .leftJoinAndSelect('permiso.usuario', 'usuario')
     .leftJoinAndSelect('permiso.tipo', 'tipo')
@@ -39,7 +45,7 @@ async function procesarCorreosYPermisosPorRol(alias, revisadoTTHH = null) {
 
   const permisosPendientes = await queryPendientes.getMany();
 
-  // Consultar permisos finalizados filtrados por mes y año en fecha_solicitud
+  // Consultar permisos finalizados
   const permisosFinalizados = await permisoRepo.createQueryBuilder('permiso')
     .leftJoinAndSelect('permiso.usuario', 'usuario')
     .leftJoinAndSelect('permiso.tipo', 'tipo')
@@ -49,30 +55,25 @@ async function procesarCorreosYPermisosPorRol(alias, revisadoTTHH = null) {
     .andWhere('usuario.ci IN (:...cedulas)', { cedulas })
     .getMany();
 
-  // Ordenar para mantener consistencia
+  // Ordenar
   correos.sort((a, b) => a.id - b.id);
   permisosPendientes.sort((a, b) => a.id - b.id);
   permisosFinalizados.sort((a, b) => a.id - b.id);
 
-  // Sets para control de emparejamiento
   const permisosEmparejados = new Set();
   const permisosFinalizadosEmparejados = new Set();
   const correosEmparejados = new Set();
   const resultados = [];
 
-  // Procesar emparejamiento correo - permiso
   for (const correo of correos) {
     const datos = parseCorreoHTML(correo.html, { date: correo.date });
 
-    if (!datos?.cedula || !datos?.fecha) {
-      continue;
-    }
-
+    if (!datos?.cedula || !datos?.fecha) continue;
     if (correosEmparejados.has(correo.id)) continue;
 
     const fechaCorreo = datos.fecha;
 
-    // Validar permisos finalizados
+    // Buscar en finalizados
     const permisoFinalizado = permisosFinalizados.find(p => {
       if (permisosFinalizadosEmparejados.has(p.id)) return false;
 
@@ -90,7 +91,7 @@ async function procesarCorreosYPermisosPorRol(alias, revisadoTTHH = null) {
       continue;
     }
 
-    // Intentar emparejar con permiso pendiente
+    // Buscar en pendientes
     const permisoPendiente = permisosPendientes.find(p => {
       if (permisosEmparejados.has(p.id)) return false;
 

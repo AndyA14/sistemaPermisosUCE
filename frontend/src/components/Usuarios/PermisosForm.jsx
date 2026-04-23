@@ -13,7 +13,8 @@ import {
   Checkbox,
   Stack
 } from '@mui/material';
-import { UploadFile as UploadFileIcon, Send as SendIcon } from '@mui/icons-material';
+import { IconButton } from '@mui/material';
+import { UploadFile as UploadFileIcon, Send as SendIcon, Delete as DeleteIcon } from '@mui/icons-material';
 import { toast, ToastContainer } from 'react-toastify';
 
 import {
@@ -93,6 +94,15 @@ function PermisosForm() {
     }));
   };
 
+  // === LÓGICA INTELIGENTE DE EVIDENCIA CORREGIDA ===
+  const requiereEvidencia = form.subtipo
+  ? (
+      form.subtipo.toLowerCase().includes('requiere') ||
+      form.subtipo.toLowerCase().includes('con')
+    ) &&
+    !form.subtipo.toLowerCase().includes('sin')
+  : false;
+
   const getPermisoData = () => {
     if (!tipoSeleccionado) return {};
 
@@ -150,12 +160,10 @@ function PermisosForm() {
 
     if (!cartaComponente) return '';
 
-    // Este bloque estático SE MANTIENE INTACTO para el envío de correos
     const estilosCarta = `
       <style>
         body { font-family: "Times New Roman", Times, serif; color: #2c3e50; background-color: #ffffff; margin: 0; padding: 2cm; box-sizing: border-box; }
         .modal-contenido { max-width: 700px; margin: 0 auto; padding: 40px; box-sizing: border-box; line-height: 1.6; background-color: #ffffff; }
-        .modal-contenido1 { color: #2c3e50; }
         .logo-institucion { display: block; max-width: 120px; margin: 0 auto 1.5rem auto; }
         .carta-encabezado { font-family: "Times New Roman", Times, serif; font-weight: 600; color: #2c3e50; text-transform: uppercase; letter-spacing: 0.06em; text-align: center; margin-bottom: 2rem; }
         .carta-encabezado p { margin: 0.15rem 0; }
@@ -189,13 +197,34 @@ function PermisosForm() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    // 🚨 VALIDACIÓN: Impide enviar si requiere archivo y no lo ha subido
+    if (requiereEvidencia && !archivo) {
+      toast.warn('Por favor, adjunta el documento de evidencia requerido para este permiso.', { position: "top-center" });
+      return;
+    }
+
     setLoading(true);
 
     try {
       const permisoData = getPermisoData();
       const htmlCarta = generarHtmlCarta();
 
-      await crearPermiso({ permisoData, archivo, htmlCorreo: htmlCarta });
+      const formData = new FormData();
+
+      Object.keys(permisoData).forEach(key => {
+        if (permisoData[key] !== null && permisoData[key] !== undefined) {
+          formData.append(key, permisoData[key]);
+        }
+      });
+
+      formData.append('htmlCorreo', htmlCarta);
+
+      if (archivo) {
+        formData.append('documento', archivo);
+      }
+
+      await crearPermiso(formData);
 
       if (!toastMostrado.current) {
         toast.success('Permiso creado con éxito.');
@@ -213,7 +242,6 @@ function PermisosForm() {
     }
   };
 
-  // Función manejadora de subida de archivos re-utilizable
   const handleFileUpload = (e, asuntoDefault) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -254,10 +282,7 @@ function PermisosForm() {
           Generador de Solicitudes
         </Typography>
 
-        {/* Uso de Grid para las dos columnas */}
         <Grid container spacing={4}>
-          
-          {/* COLUMNA IZQUIERDA: FORMULARIO */}
           <Grid item xs={12} md={5}>
             <Paper elevation={3} sx={{ p: 4, borderRadius: 3, backgroundColor: 'var(--card-bg)' }}>
               <Typography variant="h5" gutterBottom sx={{ fontWeight: 600, color: 'var(--color-text)', mb: 3 }}>
@@ -308,48 +333,10 @@ function PermisosForm() {
                 {tipoSeleccionado?.nombre === 'Falta' && (
                   <>
                     <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
-                      <TextField
-                        type="date"
-                        label="Fecha inicio"
-                        name="fecha_inicio"
-                        value={form.fecha_inicio || ''}
-                        onChange={handleChange}
-                        required
-                        fullWidth
-                        InputLabelProps={{ shrink: true }}
-                      />
-                      <TextField
-                        type="date"
-                        label="Fecha fin"
-                        name="fecha_fin"
-                        value={form.fecha_fin || ''}
-                        onChange={handleChange}
-                        required
-                        fullWidth
-                        inputProps={{ min: form.fecha_inicio }}
-                        InputLabelProps={{ shrink: true }}
-                      />
+                      <TextField type="date" label="Fecha inicio" name="fecha_inicio" value={form.fecha_inicio || ''} onChange={handleChange} required fullWidth InputLabelProps={{ shrink: true }} />
+                      <TextField type="date" label="Fecha fin" name="fecha_fin" value={form.fecha_fin || ''} onChange={handleChange} required fullWidth inputProps={{ min: form.fecha_inicio }} InputLabelProps={{ shrink: true }} />
                     </Stack>
-                    
-                    <TextField
-                      label="Descripción / Observación"
-                      name="descripcion"
-                      value={form.descripcion || ''}
-                      onChange={handleChange}
-                      multiline
-                      rows={3}
-                      fullWidth
-                    />
-
-                    {['cita_medica', 'reposo_médico'].includes(form.subtipo) && (
-                      <Box sx={{ mt: 1 }}>
-                        <Button variant="outlined" component="label" fullWidth startIcon={<UploadFileIcon />}>
-                          Subir Evidencia (PDF, Imagen)
-                          <input type="file" hidden accept=".pdf,image/*" onChange={(e) => handleFileUpload(e, 'evidencia')} />
-                        </Button>
-                        {archivo && <Typography variant="caption" display="block" sx={{ mt: 1, color: 'var(--color-link)' }}>Archivo: {archivo.name}</Typography>}
-                      </Box>
-                    )}
+                    <TextField label="Descripción / Observación" name="descripcion" value={form.descripcion || ''} onChange={handleChange} multiline rows={3} fullWidth />
                   </>
                 )}
 
@@ -357,144 +344,83 @@ function PermisosForm() {
                 {tipoSeleccionado?.nombre === 'Atraso' && (
                   <>
                     <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
-                      <TextField
-                        type="date"
-                        label="Fecha"
-                        name="fecha"
-                        value={form.fecha || ''}
-                        onChange={handleChange}
-                        required
-                        fullWidth
-                        InputLabelProps={{ shrink: true }}
-                      />
-                      <TextField
-                        type="time"
-                        label="Hora de entrada"
-                        name="hora_inicio"
-                        value={form.hora_inicio || ''}
-                        onChange={handleChange}
-                        required
-                        fullWidth
-                        InputLabelProps={{ shrink: true }}
-                      />
+                      <TextField type="date" label="Fecha" name="fecha" value={form.fecha || ''} onChange={handleChange} required fullWidth InputLabelProps={{ shrink: true }} />
+                      <TextField type="time" label="Hora de entrada" name="hora_inicio" value={form.hora_inicio || ''} onChange={handleChange} required fullWidth InputLabelProps={{ shrink: true }} />
                     </Stack>
-                    
-                    <TextField
-                      label="Motivo"
-                      name="descripcion"
-                      value={form.descripcion || ''}
-                      onChange={handleChange}
-                      multiline
-                      rows={3}
-                      fullWidth
-                    />
-
-                    {form.subtipo === 'cita_medica' && (
-                      <Box sx={{ mt: 1 }}>
-                        <Button variant="outlined" component="label" fullWidth startIcon={<UploadFileIcon />}>
-                          Subir Evidencia (PDF, Imagen)
-                          <input type="file" hidden accept=".pdf,image/*" onChange={(e) => handleFileUpload(e, 'evidencia')} />
-                        </Button>
-                        {archivo && <Typography variant="caption" display="block" sx={{ mt: 1, color: 'var(--color-link)' }}>Archivo: {archivo.name}</Typography>}
-                      </Box>
-                    )}
+                    <TextField label="Motivo" name="descripcion" value={form.descripcion || ''} onChange={handleChange} multiline rows={3} fullWidth />
                   </>
                 )}
 
                 {/* === SIN TIMBRAR === */}
                 {tipoSeleccionado?.nombre === 'Sin Timbrar' && (
                   <>
-                    <TextField
-                      type="date"
-                      label="Fecha"
-                      name="fecha"
-                      value={form.fecha || ''}
-                      onChange={handleChange}
-                      required
-                      fullWidth
-                      InputLabelProps={{ shrink: true }}
-                    />
+                    <TextField type="date" label="Fecha" name="fecha" value={form.fecha || ''} onChange={handleChange} required fullWidth InputLabelProps={{ shrink: true }} />
 
                     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                      <FormControlLabel
-                        control={<Checkbox checked={!!form.no_entrada} onChange={handleChange} name="no_entrada" color="primary" />}
-                        label="Falta entrada"
-                      />
-                      {form.no_entrada && (
-                        <TextField
-                          type="time"
-                          label="Hora de entrada"
-                          name="hora_inicio"
-                          value={form.hora_inicio || ''}
-                          onChange={handleChange}
-                          required
-                          fullWidth
-                          InputLabelProps={{ shrink: true }}
-                        />
-                      )}
+                      <FormControlLabel control={<Checkbox checked={!!form.no_entrada} onChange={handleChange} name="no_entrada" color="primary" />} label="Falta entrada" />
+                      {form.no_entrada && <TextField type="time" label="Hora de entrada" name="hora_inicio" value={form.hora_inicio || ''} onChange={handleChange} required fullWidth InputLabelProps={{ shrink: true }} />}
 
-                      <FormControlLabel
-                        control={<Checkbox checked={!!form.no_salida} onChange={handleChange} name="no_salida" color="primary" />}
-                        label="Falta salida"
-                      />
-                      {form.no_salida && (
-                        <TextField
-                          type="time"
-                          label="Hora de salida"
-                          name="hora_fin"
-                          value={form.hora_fin || ''}
-                          onChange={handleChange}
-                          required
-                          fullWidth
-                          InputLabelProps={{ shrink: true }}
-                        />
-                      )}
+                      <FormControlLabel control={<Checkbox checked={!!form.no_salida} onChange={handleChange} name="no_salida" color="primary" />} label="Falta salida" />
+                      {form.no_salida && <TextField type="time" label="Hora de salida" name="hora_fin" value={form.hora_fin || ''} onChange={handleChange} required fullWidth InputLabelProps={{ shrink: true }} />}
                     </Box>
 
-                    <TextField
-                      label="Descripción"
-                      name="descripcion"
-                      value={form.descripcion || ''}
-                      onChange={handleChange}
-                      multiline
-                      rows={3}
-                      fullWidth
-                    />
+                    <TextField label="Descripción" name="descripcion" value={form.descripcion || ''} onChange={handleChange} multiline rows={3} fullWidth />
                   </>
                 )}
 
                 {/* === OTROS === */}
                 {tipoSeleccionado?.nombre === 'Otros' && (
                   <>
-                    <TextField
-                      type="date"
-                      label="Fecha"
-                      name="fecha"
-                      value={form.fecha || ''}
-                      onChange={handleChange}
-                      required
-                      fullWidth
-                      InputLabelProps={{ shrink: true }}
-                    />
-                    
-                    <TextField
-                      label="Descripción (opcional)"
-                      name="descripcion"
-                      value={form.descripcion || ''}
-                      onChange={handleChange}
-                      multiline
-                      rows={3}
-                      fullWidth
-                    />
-
-                    <Box sx={{ mt: 1 }}>
-                      <Button variant="outlined" component="label" fullWidth startIcon={<UploadFileIcon />}>
-                        Adjuntar evidencia (opcional)
-                        <input type="file" hidden accept=".pdf,image/*" onChange={(e) => handleFileUpload(e, 'otros')} />
-                      </Button>
-                      {archivo && <Typography variant="caption" display="block" sx={{ mt: 1, color: 'var(--color-link)' }}>Archivo: {archivo.name}</Typography>}
-                    </Box>
+                    <TextField type="date" label="Fecha" name="fecha" value={form.fecha || ''} onChange={handleChange} required fullWidth InputLabelProps={{ shrink: true }} />
+                    <TextField label="Descripción (opcional)" name="descripcion" value={form.descripcion || ''} onChange={handleChange} multiline rows={3} fullWidth />
                   </>
+                )}
+
+                {/* === BOTÓN SUBIR DOCUMENTO (SOLO SI REQUIERE EVIDENCIA) === */}
+                {requiereEvidencia && !archivo && (
+                  <Button
+                    variant="outlined"
+                    component="label"
+                    startIcon={<UploadFileIcon />}
+                    sx={{
+                      mt: 2,
+                      borderRadius: 2,
+                      textTransform: 'none'
+                    }}
+                  >
+                    Subir Documento
+                    <input
+                      type="file"
+                      hidden
+                      onChange={(e) => handleFileUpload(e, 'documento')}
+                    />
+                  </Button>
+                )}
+
+                {/* === CAJA DE SUBIDA DE EVIDENCIA (ÚNICA Y DINÁMICA PARA TODOS) === */}
+                {archivo && (
+                  <Box sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    mt: 2,
+                    p: 1.5,
+                    border: '1px solid var(--color-border)',
+                    borderRadius: 2,
+                    backgroundColor: '#ffffff'
+                  }}>
+                    <Typography variant="body2" sx={{ color: 'var(--color-link)', fontWeight: 'bold', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      ✅ {archivo.name}
+                    </Typography>
+                    <IconButton
+                      size="small"
+                      color="error"
+                      onClick={() => setArchivo(null)}
+                      title="Eliminar archivo seleccionado"
+                    >
+                      <DeleteIcon />
+                    </IconButton>
+                  </Box>
                 )}
 
                 <Button
@@ -520,88 +446,21 @@ function PermisosForm() {
             </Paper>
           </Grid>
 
-          {/* COLUMNA DERECHA: VISTA PREVIA (A4 PAPER SIMULATION) */}
+          {/* COLUMNA DERECHA: VISTA PREVIA */}
           <Grid item xs={12} md={7}>
-            <Box
-              sx={{
-                width: '100%',
-                display: 'flex',
-                justifyContent: 'center',
-                position: { md: 'sticky' },
-                top: { md: 24 }
-              }}
-            >
+            <Box sx={{ width: '100%', display: 'flex', justifyContent: 'center', position: { md: 'sticky' }, top: { md: 24 } }}>
               <Paper 
                 elevation={6} 
                 sx={{ 
-                  width: '100%',
-                  maxWidth: '800px', // Ancho aproximado de A4
-                  minHeight: '789px',
-                  padding: { xs: 4, sm: '1.3cm 2cm' },
-                  backgroundColor: '#ffffff', // Siempre blanco para simular papel
-                  color: '#2c3e50',
-                  fontFamily: '"Times New Roman", Times, serif',
-                  borderRadius: 2,
-                  boxSizing: 'border-box',
-                  overflowY: 'auto',
-                  
-                  // ========================================================
-                  // NESTED SELECTORS: Reemplazan a PermisosForm.css para los 
-                  // componentes hijos (CartaAtraso, CartaFalta, etc.)
-                  // ========================================================
-                  '& .carta-encabezado': {
-                    fontWeight: 600,
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.06em',
-                    textAlign: 'center',
-                    mb: 4,
-                    '& p': { margin: '0.15rem 0' }
-                  },
-                  '& .fecha-derecha': {
-                    textAlign: 'right',
-                    mb: 3,
-                    fontSize: '1rem',
-                    fontWeight: 500
-                  },
-                  '& .destinatario-derecha': {
-                    textAlign: 'left',
-                    mb: 3,
-                    fontSize: '1rem',
-                    lineHeight: 1.3,
-                    '& p': { margin: '0.12rem 0' }
-                  },
-                  '& .saludo': {
-                    fontWeight: 600,
-                    mb: 3,
-                    textAlign: 'left'
-                  },
-                  '& .contenido-justificado': {
-                    textAlign: 'justify',
-                    my: 2,
-                    fontSize: '1rem',
-                    wordBreak: 'break-word',
-                    hyphens: 'auto'
-                  },
-                  '& .agradecimiento-derecha': {
-                    textAlign: 'left',
-                    mt: 4,
-                    fontStyle: 'italic',
-                    fontSize: '1rem'
-                  },
-                  '& .firma-derecha': {
-                    textAlign: 'left',
-                    mt: 6,
-                    fontSize: '1rem',
-                    fontWeight: 400,
-                    '& p': { margin: '0.15rem 0' },
-                    '& strong': { fontSize: '1.1rem' }
-                  },
-                  '& .logo-institucion': {
-                    display: 'block',
-                    maxWidth: '120px',
-                    height: 'auto',
-                    margin: '0 auto 1.5rem auto'
-                  }
+                  width: '100%', maxWidth: '800px', minHeight: '789px', padding: { xs: 4, sm: '1.3cm 2cm' }, backgroundColor: '#ffffff', color: '#2c3e50', fontFamily: '"Times New Roman", Times, serif', borderRadius: 2, boxSizing: 'border-box', overflowY: 'auto',
+                  '& .carta-encabezado': { fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', textAlign: 'center', mb: 4, '& p': { margin: '0.15rem 0' } },
+                  '& .fecha-derecha': { textAlign: 'right', mb: 3, fontSize: '1rem', fontWeight: 500 },
+                  '& .destinatario-derecha': { textAlign: 'left', mb: 3, fontSize: '1rem', lineHeight: 1.3, '& p': { margin: '0.12rem 0' } },
+                  '& .saludo': { fontWeight: 600, mb: 3, textAlign: 'left' },
+                  '& .contenido-justificado': { textAlign: 'justify', my: 2, fontSize: '1rem', wordBreak: 'break-word', hyphens: 'auto' },
+                  '& .agradecimiento-derecha': { textAlign: 'left', mt: 4, fontStyle: 'italic', fontSize: '1rem' },
+                  '& .firma-derecha': { textAlign: 'left', mt: 6, fontSize: '1rem', fontWeight: 400, '& p': { margin: '0.15rem 0' }, '& strong': { fontSize: '1.1rem' } },
+                  '& .logo-institucion': { display: 'block', maxWidth: '120px', height: 'auto', margin: '0 auto 1.5rem auto' }
                 }}
               >
                 {!tipoSeleccionado && (

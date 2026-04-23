@@ -59,19 +59,21 @@ function RegistroSolicitudes() {
     if (filtro.nombre) {
       const nombreLower = filtro.nombre.toLowerCase();
       filtrados = filtrados.filter(p =>
-        `${p.usuario.nombres} ${p.usuario.apellidos}`.toLowerCase().includes(nombreLower)
+        // 🚨 PROTECCIÓN AQUÍ 🚨
+        `${p?.usuario?.nombres || ''} ${p?.usuario?.apellidos || ''}`.toLowerCase().includes(nombreLower)
       );
     }
 
     if (filtro.mes && filtro.anio) {
       const mesStr = `${filtro.anio}-${filtro.mes.padStart(2, '0')}`;
-      filtrados = filtrados.filter(p => p.fecha_inicio.startsWith(mesStr));
+      filtrados = filtrados.filter(p => p?.fecha_inicio?.startsWith(mesStr));
     }
 
     if (filtro.desde && filtro.hasta) {
       const desdeDate = new Date(filtro.desde);
       const hastaDate = new Date(filtro.hasta);
       filtrados = filtrados.filter(p => {
+        if (!p?.fecha_inicio) return false;
         const fecha = new Date(p.fecha_inicio);
         return fecha >= desdeDate && fecha <= hastaDate;
       });
@@ -201,7 +203,6 @@ function RegistroSolicitudes() {
     }
   };
 
-  // Helper para renderizar estados (Reemplaza a renderEstado de utils)
   const renderEstadoChip = (estado) => {
     const estadoNorm = estado?.toLowerCase().trim() || '';
     if (estadoNorm.includes('aprobado') || estadoNorm.includes('autorizado')) {
@@ -234,26 +235,24 @@ function RegistroSolicitudes() {
           Registro de Solicitudes
         </Typography>
 
-        {/* Sección de Filtros */}
         <Paper elevation={3} sx={{ p: 3, mb: 4, borderRadius: 3, backgroundColor: 'var(--card-bg)' }}>
           <Typography variant="h6" gutterBottom sx={{ fontWeight: 600, color: 'var(--color-text)', mb: 3 }}>
             Filtros y generación de informes
           </Typography>
 
           <Grid container spacing={3} alignItems="center">
-            {/* Buscador Autocomplete */}
             <Grid item xs={12} md={4}>
               <Autocomplete
                 freeSolo
                 options={listaUsuarios}
-                getOptionLabel={(option) => typeof option === 'string' ? option : `${option.nombres} ${option.apellidos}`}
+                getOptionLabel={(option) => typeof option === 'string' ? option : `${option?.nombres || ''} ${option?.apellidos || ''}`.trim()}
                 onInputChange={(event, newInputValue) => {
                   setNombreUsuario(newInputValue);
                   if (newInputValue === '') setFiltro(prev => ({ ...prev, nombre: '' }));
                 }}
                 onChange={(event, newValue) => {
                   if (newValue && typeof newValue === 'object') {
-                    const nombreCompleto = `${newValue.nombres} ${newValue.apellidos}`;
+                    const nombreCompleto = `${newValue?.nombres || ''} ${newValue?.apellidos || ''}`.trim();
                     setFiltro(prev => ({ ...prev, nombre: nombreCompleto }));
                   } else {
                     setFiltro(prev => ({ ...prev, nombre: newValue || '' }));
@@ -270,7 +269,6 @@ function RegistroSolicitudes() {
               />
             </Grid>
 
-            {/* Selector de Mes/Año */}
             <Grid item xs={12} sm={6} md={3}>
               <TextField
                 type="month"
@@ -294,7 +292,6 @@ function RegistroSolicitudes() {
               </Button>
             </Grid>
 
-            {/* Selector de Rango de Fechas */}
             <Grid item xs={12} sm={6} md={2}>
               <TextField
                 type="date"
@@ -330,7 +327,6 @@ function RegistroSolicitudes() {
           </Grid>
         </Paper>
 
-        {/* Tabla de Permisos */}
         <Paper elevation={3} sx={{ borderRadius: 3, overflow: 'hidden', backgroundColor: 'var(--card-bg)' }}>
           <Box sx={{ p: 3, borderBottom: '1px solid var(--color-border)' }}>
             <Typography variant="h6" sx={{ fontWeight: 600, color: 'var(--color-text)' }}>
@@ -361,13 +357,14 @@ function RegistroSolicitudes() {
                 ) : (
                   permisos.map(p => (
                     <TableRow key={p.id} hover sx={{ '&:hover': { backgroundColor: 'var(--color-surface-hover, rgba(0,0,0,0.02))' } }}>
-                      <TableCell sx={{ color: 'var(--color-text)' }}>{p.usuario.nombres} {p.usuario.apellidos}</TableCell>
-                      <TableCell sx={{ color: 'var(--color-text)' }}>{p.tipo.nombre}</TableCell>
-                      <TableCell sx={{ color: 'var(--color-text)' }}>{p.tipo.sub_tipo || '-'}</TableCell>
-                      <TableCell sx={{ color: 'var(--color-text)' }}>{p.fecha_inicio}</TableCell>
-                      <TableCell sx={{ color: 'var(--color-text)' }}>{p.fecha_fin}</TableCell>
+                      {/* 🚨 PROTECCIÓN AQUÍ 🚨 */}
+                      <TableCell sx={{ color: 'var(--color-text)' }}>{p?.usuario?.nombres || 'Usuario'} {p?.usuario?.apellidos || 'Desconocido'}</TableCell>
+                      <TableCell sx={{ color: 'var(--color-text)' }}>{p?.tipo?.nombre || 'Desconocido'}</TableCell>
+                      <TableCell sx={{ color: 'var(--color-text)' }}>{p?.tipo?.sub_tipo || '-'}</TableCell>
+                      <TableCell sx={{ color: 'var(--color-text)' }}>{p?.fecha_inicio || '-'}</TableCell>
+                      <TableCell sx={{ color: 'var(--color-text)' }}>{p?.fecha_fin || '-'}</TableCell>
                       <TableCell>
-                        {renderEstadoChip(p.estado_general)}
+                        {renderEstadoChip(p?.estado_general)}
                       </TableCell>
                       <TableCell align="center">
                         <Tooltip title="Ver Carta">
@@ -388,7 +385,6 @@ function RegistroSolicitudes() {
           </TableContainer>
         </Paper>
 
-        {/* Modal para Detalles de Permiso */}
         <Dialog 
           open={!!permisoDetalle} 
           onClose={cerrarDetalle}

@@ -10,7 +10,7 @@ import {
   Avatar, 
   InputAdornment, 
   Link,
-  useTheme // <-- Importamos useTheme de MUI
+  useTheme 
 } from '@mui/material';
 import { 
   Person as PersonIcon, 
@@ -18,16 +18,40 @@ import {
 } from '@mui/icons-material';
 import { ToastContainer, toast } from 'react-toastify';
 
+// === IMPORTACIONES DE VALIDACIÓN (RHF + ZOD) ===
+import { useForm, Controller } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+
 // Importaciones de lógica propia
 import { loginUsuario } from '../services/api';
 import { isAuthenticated, getRol, loginUsuarioT } from '../utils/auth';
 import LoadingModal from '../components/LoadingModal';
 
+// === ESQUEMA DE VALIDACIÓN ZOD PARA LOGIN ===
+// Como pediste, aquí no validamos formato de correo, solo que no estén vacíos.
+const loginSchema = z.object({
+  username: z.string().min(1, 'El usuario o correo es obligatorio'),
+  contrasena: z.string().min(1, 'La contraseña es obligatoria')
+});
+
 function Login() {
-  const [form, setForm] = useState({ username: '', contrasena: '' });
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
-  const theme = useTheme(); // <-- Detectamos el tema actual (light/dark)
+  const theme = useTheme(); 
+
+  // === CONFIGURACIÓN DE REACT HOOK FORM ===
+  const {
+    control,
+    handleSubmit,
+    formState: { errors }
+  } = useForm({
+    resolver: zodResolver(loginSchema),
+    defaultValues: {
+      username: '',
+      contrasena: ''
+    }
+  });
 
   // === Función centralizada para redirigir según rol ===
   const redirigirPorRol = (rol = '') => {
@@ -48,26 +72,16 @@ function Login() {
     }
   }, [navigate]);
 
-  // === Manejo de inputs controlados ===
-  const handleInputChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
-  };
-
-  // === Envío del formulario ===
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-
-    if (!form.username || !form.contrasena) {
-      toast.warn('Por favor, complete todos los campos', { position: "top-center" });
-      return;
-    }
-
+  // === Envío del formulario validado por Zod ===
+  const onSubmitForm = async (data) => {
+    // Si la ejecución llega aquí, es porque RHF y Zod ya confirmaron 
+    // que los campos NO están vacíos. Nos ahorramos el "if" manual.
     setLoading(true);
     try {
-      const data = await loginUsuario(form);
-      loginUsuarioT(data.token);
-      localStorage.setItem('rol', data.usuario.rol.toLowerCase());
-      redirigirPorRol(data.usuario.rol);
+      const response = await loginUsuario(data);
+      loginUsuarioT(response.token);
+      localStorage.setItem('rol', response.usuario.rol.toLowerCase());
+      redirigirPorRol(response.usuario.rol);
     } catch (err) {
       toast.error(err.message || 'Error al iniciar sesión', { position: "top-center" });
     } finally {
@@ -82,7 +96,6 @@ function Login() {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        // Fondo dinámico: Azul brillante en Light Mode, Azul profundo en Dark Mode
         background: theme.palette.mode === 'dark' 
           ? 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)' 
           : 'linear-gradient(135deg, #1a237e 0%, #0d47a1 100%)',
@@ -98,7 +111,6 @@ function Login() {
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
-            // Color de tarjeta dinámico
             backgroundColor: theme.palette.mode === 'dark' ? 'rgba(30, 41, 59, 0.9)' : 'rgba(255, 255, 255, 0.95)',
             backdropFilter: 'blur(10px)',
             transition: 'transform 0.3s ease',
@@ -124,46 +136,60 @@ function Login() {
             sx={{ width: 120, height: 120, mb: 3, boxShadow: 3, backgroundColor: 'white' }}
           />
 
-          <Box component="form" onSubmit={handleSubmit} sx={{ width: '100%' }}>
-            <TextField
-              fullWidth
-              margin="normal"
+          {/* Formulario enlazado con handleSubmit de RHF */}
+          <Box component="form" onSubmit={handleSubmit(onSubmitForm)} sx={{ width: '100%' }}>
+            
+            {/* Campo Usuario */}
+            <Controller
               name="username"
-              label="Usuario"
-              placeholder="Ingrese su usuario"
-              value={form.username}
-              onChange={handleInputChange}
-              variant="outlined"
-              required
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <PersonIcon sx={{ color: 'var(--color-text-secondary)' }} />
-                  </InputAdornment>
-                ),
-              }}
-              sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
+              control={control}
+              render={({ field }) => (
+                <TextField
+                  {...field}
+                  fullWidth
+                  margin="normal"
+                  label="Usuario"
+                  placeholder="Ingrese su usuario o correo"
+                  variant="outlined"
+                  error={!!errors.username}
+                  helperText={errors.username?.message}
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <PersonIcon sx={{ color: 'var(--color-text-secondary)' }} />
+                      </InputAdornment>
+                    ),
+                  }}
+                  sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
+                />
+              )}
             />
 
-            <TextField
-              fullWidth
-              margin="normal"
+            {/* Campo Contraseña */}
+            <Controller
               name="contrasena"
-              label="Contraseña"
-              type="password"
-              placeholder="Ingrese su contraseña"
-              value={form.contrasena}
-              onChange={handleInputChange}
-              variant="outlined"
-              required
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <LockIcon sx={{ color: 'var(--color-text-secondary)' }} />
-                  </InputAdornment>
-                ),
-              }}
-              sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
+              control={control}
+              render={({ field }) => (
+                <TextField
+                  {...field}
+                  fullWidth
+                  margin="normal"
+                  label="Contraseña"
+                  type="password"
+                  placeholder="Ingrese su contraseña"
+                  variant="outlined"
+                  error={!!errors.contrasena}
+                  helperText={errors.contrasena?.message}
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <LockIcon sx={{ color: 'var(--color-text-secondary)' }} />
+                      </InputAdornment>
+                    ),
+                  }}
+                  sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
+                />
+              )}
             />
 
             <Button
@@ -177,7 +203,6 @@ function Login() {
                 py: 1.5,
                 borderRadius: 2,
                 fontWeight: 'bold',
-                // Botón dinámico
                 backgroundColor: theme.palette.mode === 'dark' ? '#0ea5e9' : '#1a237e',
                 '&:hover': { 
                   backgroundColor: theme.palette.mode === 'dark' ? '#0284c7' : '#0d47a1' 

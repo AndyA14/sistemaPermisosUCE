@@ -49,21 +49,22 @@ const DashboardTTHH = () => {
 
         // Formatear top usuarios
         setTopUsuarios(top.map(d => ({
-          usuario_id: `${d.nombres} ${d.apellidos}`,
-          total: Number(d.total),
+          usuario_id: `${d?.nombres || 'Usuario'} ${d?.apellidos || 'Desconocido'}`,
+          total: Number(d?.total || 0),
         })));
 
         // Permisos por tipo
         setPermisosPorTipo(tipos.map(t => ({
-          tipo: t.tipo,
-          total: Number(t.total),
+          tipo: t?.tipo || 'Desconocido',
+          total: Number(t?.total || 0),
         })));
 
         // Permisos por mes y estado
         const agrupados = meses.reduce((acc, { mes, estado, total }) => {
-          if (!acc[mes]) acc[mes] = { mes, autorizado: 0, denegado: 0 };
+          const mesValidado = mes || 'Desconocido';
+          if (!acc[mesValidado]) acc[mesValidado] = { mes: mesValidado, autorizado: 0, denegado: 0 };
           if (estado === 'autorizado' || estado === 'denegado') {
-            acc[mes][estado] = Number(total);
+            acc[mesValidado][estado] = Number(total || 0);
           }
           return acc;
         }, {});
@@ -71,17 +72,22 @@ const DashboardTTHH = () => {
 
         // Procesar permisos recientes para todos los gráficos nuevos
         const permisosProcesados = ultimos.map(p => {
-          const dias = ((new Date(p.fecha_fin) - new Date(p.fecha_inicio)) / (1000 * 60 * 60 * 24)) + 1;
+          // Protección contra fechas inválidas
+          const fechaInicio = p?.fecha_inicio ? new Date(p.fecha_inicio) : new Date();
+          const fechaFin = p?.fecha_fin ? new Date(p.fecha_fin) : new Date();
+          const dias = ((fechaFin - fechaInicio) / (1000 * 60 * 60 * 24)) + 1;
+          
           return {
             ...p,
-            fecha: p.fecha_solicitud,
-            usuario: `${p.usuario.nombres} ${p.usuario.apellidos}`,
-            tipo: p.tipo?.nombre || 'Desconocido',
-            subtipo: p.tipo?.sub_tipo || 'Otro',
-            estado: p.estado_general || 'pendiente',
-            dias: Number(dias.toFixed(1)),
-            activo: p.activo,
-            carga_vacaciones: p.carga_vacaciones,
+            fecha: p?.fecha_solicitud || new Date().toISOString(),
+            // 🚨 SOLUCIÓN AL ERROR CRÍTICO AQUÍ: Optional Chaining (?.) 🚨
+            usuario: p?.usuario ? `${p.usuario.nombres || ''} ${p.usuario.apellidos || ''}`.trim() : 'Usuario Desconocido',
+            tipo: p?.tipo?.nombre || 'Desconocido',
+            subtipo: p?.tipo?.sub_tipo || 'Otro',
+            estado: p?.estado_general || 'pendiente',
+            dias: Number(dias.toFixed(1)) || 0,
+            activo: p?.activo || false,
+            carga_vacaciones: p?.carga_vacaciones || false,
           };
         });
         setUltimosPermisos(permisosProcesados);

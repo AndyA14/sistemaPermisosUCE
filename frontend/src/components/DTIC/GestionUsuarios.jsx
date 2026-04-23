@@ -41,6 +41,11 @@ import {
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
+// === IMPORTACIONES DE VALIDACIÓN (RHF + ZOD) ===
+import { useForm, Controller } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+
 // Importaciones locales
 import {
   getUsuarios,
@@ -51,6 +56,36 @@ import {
 } from '../../services/api';
 import LoadingModal from '../../components/LoadingModal';
 
+// === ESQUEMA DE VALIDACIÓN ZOD ===
+const usuarioSchema = z.object({
+  nombres: z.string().min(3, 'Los nombres son obligatorios'),
+  apellidos: z.string().min(3, 'Los apellidos son obligatorios'),
+  ci: z.string()
+    .length(10, 'La cédula debe tener exactamente 10 dígitos')
+    .regex(/^\d+$/, 'La cédula solo debe contener números'),
+  correo: z.string()
+    .min(1, 'El correo es obligatorio')
+    .includes('@', { message: 'El correo debe contener el símbolo "@"' }),
+  telefono: z.string()
+    .min(7, 'Mínimo 7 dígitos requeridos')
+    .regex(/^\d+$/, 'El teléfono solo debe contener números'),
+  direccion: z.string().min(4, 'La dirección es obligatoria'),
+  rol: z.enum(['docente', 'admin', 'director', 'tthh', 'dti']),
+  username: z.string()
+});
+
+const defaultValuesForm = {
+  nombres: '',
+  apellidos: '',
+  username: '',
+  ci: '',
+  correo: '',
+  telefono: '',
+  direccion: '',
+  rol: 'docente',
+};
+
+// Función helper original
 function generarUsername(nombres, apellidos, usuariosExistentes) {
   if (!nombres || !apellidos) return '';
 
@@ -80,21 +115,30 @@ function GestionUsuarios() {
   const [usuarios, setUsuarios] = useState([]);
   const [busquedaNombre, setBusquedaNombre] = useState('');
   const [busquedaCI, setBusquedaCI] = useState('');
-  const [form, setForm] = useState({
-    username: '',
-    ci: '',
-    nombres: '',
-    apellidos: '',
-    correo: '',
-    telefono: '',
-    direccion: '',
-    rol: 'docente',
-  });
+  
   const [modoEditar, setModoEditar] = useState(false);
   const [usuarioEditarId, setUsuarioEditarId] = useState(null);
   const [cargando, setCargando] = useState(false);
 
   const toastMostrado = useRef(false);
+
+  // === CONFIGURACIÓN DE REACT HOOK FORM ===
+  const {
+    control,
+    handleSubmit,
+    reset,
+    setValue,
+    watch,
+    formState: { errors }
+  } = useForm({
+    resolver: zodResolver(usuarioSchema),
+    defaultValues: defaultValuesForm,
+    mode: 'onChange' // Valida mientras el usuario escribe
+  });
+
+  // Observamos los nombres y apellidos para generar el username en tiempo real
+  const watchNombres = watch('nombres');
+  const watchApellidos = watch('apellidos');
 
   useEffect(() => {
     const fetchInicial = async () => {
@@ -107,12 +151,13 @@ function GestionUsuarios() {
     fetchInicial();
   }, []);
 
+  // Efecto para autogenerar el username
   useEffect(() => {
     if (!modoEditar) {
-      const nuevoUsername = generarUsername(form.nombres, form.apellidos, usuarios);
-      setForm(prev => ({ ...prev, username: nuevoUsername }));
+      const nuevoUsername = generarUsername(watchNombres, watchApellidos, usuarios);
+      setValue('username', nuevoUsername, { shouldValidate: true });
     }
-  }, [form.nombres, form.apellidos, usuarios, modoEditar]);
+  }, [watchNombres, watchApellidos, usuarios, modoEditar, setValue]);
 
   const cargarUsuarios = async () => {
     setCargando(true);
@@ -127,23 +172,18 @@ function GestionUsuarios() {
     }
   };
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setForm(prev => ({ ...prev, [name]: value }));
-  };
-
-  const handleGuardar = async (e) => {
-    e.preventDefault();
+  // onSubmit ahora recibe 'data' ya validada y perfecta desde Zod
+  const onSubmitForm = async (data) => {
     setCargando(true);
     try {
       if (modoEditar) {
-        await actualizarUsuario(usuarioEditarId, { ...form });
+        await actualizarUsuario(usuarioEditarId, data);
         toast.success('Usuario actualizado correctamente');
       } else {
-        await crearUsuario(form);
+        await crearUsuario(data);
         toast.success('Usuario creado correctamente');
       }
-      resetForm();
+      handleResetForm();
       await cargarUsuarios();
     } catch (error) {
       console.error(error);
@@ -156,7 +196,8 @@ function GestionUsuarios() {
   const handleEditar = (usuario) => {
     setModoEditar(true);
     setUsuarioEditarId(usuario.id);
-    setForm({
+    // Llenamos el formulario con los datos usando reset() de RHF
+    reset({
       nombres: usuario.nombres,
       apellidos: usuario.apellidos,
       username: usuario.username,
@@ -187,19 +228,10 @@ function GestionUsuarios() {
     }
   };
 
-  const resetForm = () => {
+  const handleResetForm = () => {
     setModoEditar(false);
     setUsuarioEditarId(null);
-    setForm({
-      username: '',
-      ci: '',
-      nombres: '',
-      apellidos: '',
-      correo: '',
-      telefono: '',
-      direccion: '',
-      rol: 'docente',
-    });
+    reset(defaultValuesForm); // Limpia todos los errores y valores
   };
 
   const usuariosFiltrados = usuarios.filter((u) =>
@@ -216,37 +248,21 @@ function GestionUsuarios() {
     dti: 'DTIC',
   };
 
-  // Helper para crear KpiCards
   const KpiCard = ({ title, value, icon, colorParams }) => (
     <Paper 
       elevation={3} 
-      sx={{ 
-        p: 3, 
-        borderRadius: 3, 
-        display: 'flex', 
-        alignItems: 'center', 
-        gap: 2, 
-        background: colorParams.bg,
-        color: colorParams.text,
-        transition: 'transform 0.2s',
-        '&:hover': { transform: 'translateY(-5px)' }
-      }}
+      sx={{ p: 3, borderRadius: 3, display: 'flex', alignItems: 'center', gap: 2, background: colorParams.bg, color: colorParams.text, transition: 'transform 0.2s', '&:hover': { transform: 'translateY(-5px)' } }}
     >
       <Box sx={{ p: 1.5, borderRadius: '50%', backgroundColor: 'rgba(255,255,255,0.2)', display: 'flex' }}>
         {icon}
       </Box>
       <Box>
-        <Typography variant="h4" sx={{ fontWeight: 'bold' }}>
-          {value}
-        </Typography>
-        <Typography variant="body2" sx={{ opacity: 0.9, fontWeight: 500, textTransform: 'uppercase', letterSpacing: 0.5 }}>
-          {title}
-        </Typography>
+        <Typography variant="h4" sx={{ fontWeight: 'bold' }}>{value}</Typography>
+        <Typography variant="body2" sx={{ opacity: 0.9, fontWeight: 500, textTransform: 'uppercase', letterSpacing: 0.5 }}>{title}</Typography>
       </Box>
     </Paper>
   );
 
-  // Helper para colores de roles
   const renderRoleChip = (rol) => {
     const roleColors = {
       docente: { bg: '#e0f2fe', text: '#075985' },
@@ -256,14 +272,7 @@ function GestionUsuarios() {
       dti: { bg: '#cffafe', text: '#155e75' }
     };
     const colors = roleColors[rol] || { bg: '#f1f5f9', text: '#475569' };
-    
-    return (
-      <Chip 
-        label={ROLES_LABELS[rol] || rol} 
-        size="small" 
-        sx={{ bgcolor: colors.bg, color: colors.text, fontWeight: 'bold' }} 
-      />
-    );
+    return <Chip label={ROLES_LABELS[rol] || rol} size="small" sx={{ bgcolor: colors.bg, color: colors.text, fontWeight: 'bold' }} />;
   };
 
   return (
@@ -272,8 +281,6 @@ function GestionUsuarios() {
       <LoadingModal visible={cargando} />
 
       <Container maxWidth="xl">
-        
-        {/* Header con estadísticas */}
         <Box sx={{ mb: 5 }}>
           <Typography variant="h3" align="center" gutterBottom sx={{ fontWeight: 'bold', color: 'var(--color-text)' }}>
             Gestión de Usuarios
@@ -284,73 +291,39 @@ function GestionUsuarios() {
 
           <Grid container spacing={3} justifyContent="center">
             <Grid item xs={12} sm={4}>
-              <KpiCard 
-                title="Total Usuarios" 
-                value={usuarios.length} 
-                icon={<PeopleIcon fontSize="large" />} 
-                colorParams={{ bg: 'linear-gradient(135deg, #0ea5e9, #06b6d4)', text: 'white' }} 
-              />
+              <KpiCard title="Total Usuarios" value={usuarios.length} icon={<PeopleIcon fontSize="large" />} colorParams={{ bg: 'linear-gradient(135deg, #0ea5e9, #06b6d4)', text: 'white' }} />
             </Grid>
             <Grid item xs={12} sm={4}>
-              <KpiCard 
-                title="Activos" 
-                value={usuarios.filter(u => u.estado).length} 
-                icon={<CheckCircleOutline fontSize="large" />} 
-                colorParams={{ bg: 'linear-gradient(135deg, #10b981, #059669)', text: 'white' }} 
-              />
+              <KpiCard title="Activos" value={usuarios.filter(u => u.estado).length} icon={<CheckCircleOutline fontSize="large" />} colorParams={{ bg: 'linear-gradient(135deg, #10b981, #059669)', text: 'white' }} />
             </Grid>
             <Grid item xs={12} sm={4}>
-              <KpiCard 
-                title="Inactivos" 
-                value={usuarios.filter(u => !u.estado).length} 
-                icon={<CancelOutlined fontSize="large" />} 
-                colorParams={{ bg: 'linear-gradient(135deg, #ef4444, #dc2626)', text: 'white' }} 
-              />
+              <KpiCard title="Inactivos" value={usuarios.filter(u => !u.estado).length} icon={<CancelOutlined fontSize="large" />} colorParams={{ bg: 'linear-gradient(135deg, #ef4444, #dc2626)', text: 'white' }} />
             </Grid>
           </Grid>
         </Box>
 
-        {/* Filtros */}
         <Paper elevation={2} sx={{ p: 3, mb: 4, borderRadius: 3, backgroundColor: 'var(--card-bg)' }}>
           <Grid container spacing={3} alignItems="center">
             <Grid item xs={12} md={5}>
               <TextField
-                fullWidth
-                variant="outlined"
-                placeholder="Buscar por nombre completo..."
-                value={busquedaNombre}
-                onChange={(e) => setBusquedaNombre(e.target.value)}
-                InputProps={{
-                  startAdornment: <InputAdornment position="start"><SearchIcon /></InputAdornment>,
-                }}
+                fullWidth variant="outlined" placeholder="Buscar por nombre completo..." value={busquedaNombre} onChange={(e) => setBusquedaNombre(e.target.value)}
+                InputProps={{ startAdornment: <InputAdornment position="start"><SearchIcon /></InputAdornment> }}
               />
             </Grid>
             <Grid item xs={12} md={4}>
               <TextField
-                fullWidth
-                variant="outlined"
-                placeholder="Buscar por CI..."
-                value={busquedaCI}
-                onChange={(e) => setBusquedaCI(e.target.value)}
-                InputProps={{
-                  startAdornment: <InputAdornment position="start"><BadgeIcon /></InputAdornment>,
-                }}
+                fullWidth variant="outlined" placeholder="Buscar por CI..." value={busquedaCI} onChange={(e) => setBusquedaCI(e.target.value)}
+                InputProps={{ startAdornment: <InputAdornment position="start"><BadgeIcon /></InputAdornment> }}
               />
             </Grid>
             <Grid item xs={12} md={3} sx={{ textAlign: { xs: 'left', md: 'right' } }}>
               {(busquedaNombre || busquedaCI) && (
-                <Chip 
-                  label={`Mostrando ${usuariosFiltrados.length} de ${usuarios.length}`}
-                  color="primary" 
-                  variant="outlined"
-                  sx={{ fontWeight: 'bold' }}
-                />
+                <Chip label={`Mostrando ${usuariosFiltrados.length} de ${usuarios.length}`} color="primary" variant="outlined" sx={{ fontWeight: 'bold' }} />
               )}
             </Grid>
           </Grid>
         </Paper>
 
-        {/* Formulario */}
         <Paper elevation={3} sx={{ p: 4, mb: 5, borderRadius: 3, backgroundColor: 'var(--card-bg)' }}>
           <Typography variant="h5" align="center" gutterBottom sx={{ fontWeight: 600, color: 'var(--color-text)' }}>
             {modoEditar ? 'Editar Usuario' : 'Crear Nuevo Usuario'}
@@ -359,29 +332,38 @@ function GestionUsuarios() {
             Complete los datos correspondientes en el formulario
           </Typography>
           
-          <Box component="form" onSubmit={handleGuardar}>
+          <Box component="form" onSubmit={handleSubmit(onSubmitForm)}>
             <Grid container spacing={4}>
-              
               <Grid item xs={12} md={6}>
                 <Typography variant="subtitle1" sx={{ fontWeight: 'bold', mb: 2, color: 'var(--color-text)' }}>Información Personal</Typography>
                 <Stack spacing={2}>
-                  <TextField
+                  <Controller
                     name="nombres"
-                    label="Nombres completos"
-                    value={form.nombres}
-                    onChange={handleChange}
-                    required
-                    fullWidth
-                    InputProps={{ startAdornment: <InputAdornment position="start"><PersonIcon /></InputAdornment> }}
+                    control={control}
+                    render={({ field }) => (
+                      <TextField
+                        {...field}
+                        label="Nombres completos"
+                        fullWidth
+                        error={!!errors.nombres}
+                        helperText={errors.nombres?.message}
+                        InputProps={{ startAdornment: <InputAdornment position="start"><PersonIcon /></InputAdornment> }}
+                      />
+                    )}
                   />
-                  <TextField
+                  <Controller
                     name="apellidos"
-                    label="Apellidos completos"
-                    value={form.apellidos}
-                    onChange={handleChange}
-                    required
-                    fullWidth
-                    InputProps={{ startAdornment: <InputAdornment position="start"><PersonIcon /></InputAdornment> }}
+                    control={control}
+                    render={({ field }) => (
+                      <TextField
+                        {...field}
+                        label="Apellidos completos"
+                        fullWidth
+                        error={!!errors.apellidos}
+                        helperText={errors.apellidos?.message}
+                        InputProps={{ startAdornment: <InputAdornment position="start"><PersonIcon /></InputAdornment> }}
+                      />
+                    )}
                   />
                 </Stack>
               </Grid>
@@ -389,27 +371,34 @@ function GestionUsuarios() {
               <Grid item xs={12} md={6}>
                 <Typography variant="subtitle1" sx={{ fontWeight: 'bold', mb: 2, color: 'var(--color-text)' }}>Datos de Acceso</Typography>
                 <Stack spacing={2}>
-                  <TextField
+                  <Controller
                     name="username"
-                    label="Username (Generado)"
-                    value={form.username}
-                    readOnly
-                    fullWidth
-                    sx={{ backgroundColor: 'var(--color-bg-secondary)', borderRadius: 1 }}
-                    InputProps={{ 
-                      startAdornment: <InputAdornment position="start"><PersonIcon /></InputAdornment>,
-                      readOnly: true
-                    }}
-                    helperText="Generado automáticamente basado en nombres y apellidos"
+                    control={control}
+                    render={({ field }) => (
+                      <TextField
+                        {...field}
+                        label="Username (Generado)"
+                        readOnly
+                        fullWidth
+                        sx={{ backgroundColor: 'var(--color-bg-secondary)', borderRadius: 1 }}
+                        InputProps={{ startAdornment: <InputAdornment position="start"><PersonIcon /></InputAdornment>, readOnly: true }}
+                        helperText="Generado automáticamente basado en nombres y apellidos"
+                      />
+                    )}
                   />
-                  <TextField
+                  <Controller
                     name="ci"
-                    label="Cédula de Identidad"
-                    value={form.ci}
-                    onChange={handleChange}
-                    required
-                    fullWidth
-                    InputProps={{ startAdornment: <InputAdornment position="start"><BadgeIcon /></InputAdornment> }}
+                    control={control}
+                    render={({ field }) => (
+                      <TextField
+                        {...field}
+                        label="Cédula de Identidad"
+                        fullWidth
+                        error={!!errors.ci}
+                        helperText={errors.ci?.message}
+                        InputProps={{ startAdornment: <InputAdornment position="start"><BadgeIcon /></InputAdornment> }}
+                      />
+                    )}
                   />
                 </Stack>
               </Grid>
@@ -417,24 +406,34 @@ function GestionUsuarios() {
               <Grid item xs={12} md={6}>
                 <Typography variant="subtitle1" sx={{ fontWeight: 'bold', mb: 2, color: 'var(--color-text)' }}>Información de Contacto</Typography>
                 <Stack spacing={2}>
-                  <TextField
-                    type="email"
+                  <Controller
                     name="correo"
-                    label="Correo electrónico"
-                    value={form.correo}
-                    onChange={handleChange}
-                    required
-                    fullWidth
-                    InputProps={{ startAdornment: <InputAdornment position="start"><EmailIcon /></InputAdornment> }}
+                    control={control}
+                    render={({ field }) => (
+                      <TextField
+                        {...field}
+                        type="text"
+                        label="Correo electrónico"
+                        fullWidth
+                        error={!!errors.correo}
+                        helperText={errors.correo?.message}
+                        InputProps={{ startAdornment: <InputAdornment position="start"><EmailIcon /></InputAdornment> }}
+                      />
+                    )}
                   />
-                  <TextField
+                  <Controller
                     name="telefono"
-                    label="Número de teléfono"
-                    value={form.telefono}
-                    onChange={handleChange}
-                    required
-                    fullWidth
-                    InputProps={{ startAdornment: <InputAdornment position="start"><PhoneIcon /></InputAdornment> }}
+                    control={control}
+                    render={({ field }) => (
+                      <TextField
+                        {...field}
+                        label="Número de teléfono"
+                        fullWidth
+                        error={!!errors.telefono}
+                        helperText={errors.telefono?.message}
+                        InputProps={{ startAdornment: <InputAdornment position="start"><PhoneIcon /></InputAdornment> }}
+                      />
+                    )}
                   />
                 </Stack>
               </Grid>
@@ -442,33 +441,43 @@ function GestionUsuarios() {
               <Grid item xs={12} md={6}>
                 <Typography variant="subtitle1" sx={{ fontWeight: 'bold', mb: 2, color: 'var(--color-text)' }}>Rol y Extras</Typography>
                 <Stack spacing={2}>
-                  <TextField
+                  <Controller
                     name="direccion"
-                    label="Dirección completa"
-                    value={form.direccion}
-                    onChange={handleChange}
-                    required
-                    fullWidth
-                    InputProps={{ startAdornment: <InputAdornment position="start"><LocationIcon /></InputAdornment> }}
+                    control={control}
+                    render={({ field }) => (
+                      <TextField
+                        {...field}
+                        label="Dirección completa"
+                        fullWidth
+                        error={!!errors.direccion}
+                        helperText={errors.direccion?.message}
+                        InputProps={{ startAdornment: <InputAdornment position="start"><LocationIcon /></InputAdornment> }}
+                      />
+                    )}
                   />
-                  <TextField
-                    select
+                  <Controller
                     name="rol"
-                    label="Rol del Sistema"
-                    value={form.rol}
-                    onChange={handleChange}
-                    fullWidth
-                    InputProps={{ startAdornment: <InputAdornment position="start"><RoleIcon /></InputAdornment> }}
-                  >
-                    <MenuItem value="docente">Docente</MenuItem>
-                    <MenuItem value="admin">Administrador</MenuItem>
-                    <MenuItem value="director">Director</MenuItem>
-                    <MenuItem value="tthh">Talento Humano</MenuItem>
-                    <MenuItem value="dti">DTIC</MenuItem>
-                  </TextField>
+                    control={control}
+                    render={({ field }) => (
+                      <TextField
+                        {...field}
+                        select
+                        label="Rol del Sistema"
+                        fullWidth
+                        error={!!errors.rol}
+                        helperText={errors.rol?.message}
+                        InputProps={{ startAdornment: <InputAdornment position="start"><RoleIcon /></InputAdornment> }}
+                      >
+                        <MenuItem value="docente">Docente</MenuItem>
+                        <MenuItem value="admin">Administrador</MenuItem>
+                        <MenuItem value="director">Director</MenuItem>
+                        <MenuItem value="tthh">Talento Humano</MenuItem>
+                        <MenuItem value="dti">DTIC</MenuItem>
+                      </TextField>
+                    )}
+                  />
                 </Stack>
               </Grid>
-
             </Grid>
 
             <Box sx={{ mt: 4, pt: 3, borderTop: '1px solid var(--color-border)', display: 'flex', gap: 2, justifyContent: 'center' }}>
@@ -485,7 +494,7 @@ function GestionUsuarios() {
                 <Button
                   variant="outlined"
                   size="large"
-                  onClick={resetForm}
+                  onClick={handleResetForm}
                   startIcon={<CloseIcon />}
                   sx={{ color: 'var(--color-text)', borderColor: 'var(--color-border)', fontWeight: 'bold', textTransform: 'none' }}
                 >
@@ -529,9 +538,7 @@ function GestionUsuarios() {
                         '&:hover': { backgroundColor: 'var(--color-surface-hover, rgba(0,0,0,0.05))' }
                       }}
                     >
-                      <TableCell>
-                        <Chip label={`#${u.id}`} size="small" sx={{ bgcolor: '#e0f2fe', color: '#075985', fontWeight: 'bold' }} />
-                      </TableCell>
+                      <TableCell><Chip label={`#${u.id}`} size="small" sx={{ bgcolor: '#e0f2fe', color: '#075985', fontWeight: 'bold' }} /></TableCell>
                       <TableCell>
                         <Typography variant="body1" sx={{ fontWeight: 'bold', color: 'var(--color-text)' }}>{u.nombres} {u.apellidos}</Typography>
                         <Typography variant="caption" sx={{ color: 'var(--color-text-secondary)', fontFamily: 'monospace' }}>CI: {u.ci}</Typography>
@@ -540,32 +547,18 @@ function GestionUsuarios() {
                         <Typography variant="body2" sx={{ color: 'var(--color-text)' }}><EmailIcon sx={{ fontSize: 16, verticalAlign: 'text-bottom', mr: 0.5 }}/>{u.correo}</Typography>
                         <Typography variant="body2" sx={{ color: 'var(--color-text-secondary)' }}><PhoneIcon sx={{ fontSize: 16, verticalAlign: 'text-bottom', mr: 0.5 }}/>{u.telefono}</Typography>
                       </TableCell>
+                      <TableCell><Chip label={`@${u.username}`} size="small" variant="outlined" sx={{ fontWeight: 'bold', color: 'var(--color-text)' }} /></TableCell>
+                      <TableCell>{renderRoleChip(u.rol)}</TableCell>
                       <TableCell>
-                        <Chip label={`@${u.username}`} size="small" variant="outlined" sx={{ fontWeight: 'bold', color: 'var(--color-text)' }} />
-                      </TableCell>
-                      <TableCell>
-                        {renderRoleChip(u.rol)}
-                      </TableCell>
-                      <TableCell>
-                        <Chip 
-                          label={u.estado ? 'Activo' : 'Inactivo'} 
-                          color={u.estado ? 'success' : 'error'} 
-                          size="small" 
-                          sx={{ fontWeight: 'bold' }} 
-                        />
+                        <Chip label={u.estado ? 'Activo' : 'Inactivo'} color={u.estado ? 'success' : 'error'} size="small" sx={{ fontWeight: 'bold' }} />
                       </TableCell>
                       <TableCell align="center">
                         <Stack direction="row" spacing={1} justifyContent="center">
                           <Tooltip title="Editar">
-                            <IconButton color="warning" onClick={() => handleEditar(u)}>
-                              <EditIcon />
-                            </IconButton>
+                            <IconButton color="warning" onClick={() => handleEditar(u)}><EditIcon /></IconButton>
                           </Tooltip>
                           <Tooltip title={u.estado ? 'Desactivar' : 'Activar'}>
-                            <IconButton 
-                              color={u.estado ? 'error' : 'success'} 
-                              onClick={() => handleToggleActivo(u.id, u.estado)}
-                            >
+                            <IconButton color={u.estado ? 'error' : 'success'} onClick={() => handleToggleActivo(u.id, u.estado)}>
                               {u.estado ? <ToggleOffIcon /> : <ToggleOnIcon />}
                             </IconButton>
                           </Tooltip>
@@ -588,7 +581,6 @@ function GestionUsuarios() {
             </Table>
           </TableContainer>
         </Paper>
-
       </Container>
     </Box>
   );

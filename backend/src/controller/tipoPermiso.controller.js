@@ -62,7 +62,7 @@ async function eliminarTipoPermiso(req, res) {
   try {
     const { id } = req.params;
     await tipoPermisoService.eliminarTipoPermiso(parseInt(id));
-    res.json({ mensaje: '🗑️ Tipo de permiso eliminado correctamente' });
+    res.json({ mensaje: ' Tipo de permiso eliminado correctamente' });
   } catch (err) {
     console.error('❌ Error eliminarTipoPermiso:', err);
     res.status(err.statusCode || 500).json({ error: err.message });

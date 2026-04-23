@@ -1,10 +1,12 @@
 import React, { useEffect, useState, useRef } from 'react';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
-  PieChart, Pie, Cell, LineChart, Line, ScatterChart, Scatter, Radar, RadarChart, PolarGrid,
-  PolarAngleAxis, PolarRadiusAxis
+  LineChart, Line
 } from 'recharts';
+import { Box, Typography, Paper } from '@mui/material';
 import { toast, ToastContainer } from 'react-toastify';
+
+// Importaciones locales
 import LoadingModal from '../../components/LoadingModal.jsx';
 import {
   obtenerTopDocentes,
@@ -12,11 +14,9 @@ import {
   obtenerPermisosPorMes,
   obtenerUltimosPermisos,
 } from '../../services/api.js';
-import '../../styles/Dashboard.css';
 
 const COLORS = ['#8884d8', '#82ca9d', '#ffc658', '#ff7f50', '#a29bfe', '#55efc4', '#ff6b81', '#e17055'];
 const COLORS_STATES = { autorizado: '#2ecc71', denegado: '#e74c3c', pendiente: '#f1c40f' };
-const COLORS_ACTIVOS = ['#55efc4', '#d63031'];
 
 const DashboardTTHH = () => {
   const [topUsuarios, setTopUsuarios] = useState([]);
@@ -49,21 +49,22 @@ const DashboardTTHH = () => {
 
         // Formatear top usuarios
         setTopUsuarios(top.map(d => ({
-          usuario_id: `${d.nombres} ${d.apellidos}`,
-          total: Number(d.total),
+          usuario_id: `${d?.nombres || 'Usuario'} ${d?.apellidos || 'Desconocido'}`,
+          total: Number(d?.total || 0),
         })));
 
         // Permisos por tipo
         setPermisosPorTipo(tipos.map(t => ({
-          tipo: t.tipo,
-          total: Number(t.total),
+          tipo: t?.tipo || 'Desconocido',
+          total: Number(t?.total || 0),
         })));
 
         // Permisos por mes y estado
         const agrupados = meses.reduce((acc, { mes, estado, total }) => {
-          if (!acc[mes]) acc[mes] = { mes, autorizado: 0, denegado: 0 };
+          const mesValidado = mes || 'Desconocido';
+          if (!acc[mesValidado]) acc[mesValidado] = { mes: mesValidado, autorizado: 0, denegado: 0 };
           if (estado === 'autorizado' || estado === 'denegado') {
-            acc[mes][estado] = Number(total);
+            acc[mesValidado][estado] = Number(total || 0);
           }
           return acc;
         }, {});
@@ -71,17 +72,22 @@ const DashboardTTHH = () => {
 
         // Procesar permisos recientes para todos los gráficos nuevos
         const permisosProcesados = ultimos.map(p => {
-          const dias = ((new Date(p.fecha_fin) - new Date(p.fecha_inicio)) / (1000 * 60 * 60 * 24)) + 1;
+          // Protección contra fechas inválidas
+          const fechaInicio = p?.fecha_inicio ? new Date(p.fecha_inicio) : new Date();
+          const fechaFin = p?.fecha_fin ? new Date(p.fecha_fin) : new Date();
+          const dias = ((fechaFin - fechaInicio) / (1000 * 60 * 60 * 24)) + 1;
+          
           return {
             ...p,
-            fecha: p.fecha_solicitud,
-            usuario: `${p.usuario.nombres} ${p.usuario.apellidos}`,
-            tipo: p.tipo?.nombre || 'Desconocido',
-            subtipo: p.tipo?.sub_tipo || 'Otro',
-            estado: p.estado_general || 'pendiente',
-            dias: Number(dias.toFixed(1)),
-            activo: p.activo,
-            carga_vacaciones: p.carga_vacaciones,
+            fecha: p?.fecha_solicitud || new Date().toISOString(),
+            // 🚨 SOLUCIÓN AL ERROR CRÍTICO AQUÍ: Optional Chaining (?.) 🚨
+            usuario: p?.usuario ? `${p.usuario.nombres || ''} ${p.usuario.apellidos || ''}`.trim() : 'Usuario Desconocido',
+            tipo: p?.tipo?.nombre || 'Desconocido',
+            subtipo: p?.tipo?.sub_tipo || 'Otro',
+            estado: p?.estado_general || 'pendiente',
+            dias: Number(dias.toFixed(1)) || 0,
+            activo: p?.activo || false,
+            carga_vacaciones: p?.carga_vacaciones || false,
           };
         });
         setUltimosPermisos(permisosProcesados);
@@ -204,14 +210,38 @@ const DashboardTTHH = () => {
       <ToastContainer position="top-right" autoClose={4000} theme="colored" />
       {loading && <LoadingModal visible={true} />}
 
-      <div className="dashboard-tthh-container">
-        <h2>📊 Dashboard </h2>
+      <Box
+        sx={{
+          padding: { xs: 2, md: 4 },
+          backgroundColor: 'var(--color-bg)',
+          color: 'var(--color-text)',
+          minHeight: '100vh',
+        }}
+      >
+        <Typography 
+          variant="h4" 
+          component="h2" 
+          align="center" 
+          gutterBottom 
+          sx={{ fontWeight: 'bold', mb: 4 }}
+        >
+          📊 Dashboard
+        </Typography>
 
-        <section className="charts-section">
-
-          {/* 1. Duración promedio permisos por tipo y subtipo (Barras agrupadas) */}
-          <div className="chart-card">
-            <h3>Duración Promedio de Permisos por Tipo y Subtipo</h3>
+        <Box
+          component="section"
+          sx={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
+            gap: 4,
+            mt: 4,
+          }}
+        >
+          {/* 1. Duración promedio permisos por tipo y subtipo */}
+          <Paper elevation={3} sx={{ p: 3, borderRadius: 2, backgroundColor: 'var(--card-bg)', border: '1px solid var(--color-border)' }}>
+            <Typography variant="h6" align="center" gutterBottom sx={{ mb: 3 }}>
+              Duración Promedio de Permisos por Tipo y Subtipo
+            </Typography>
             <ResponsiveContainer width="100%" height={350}>
               <BarChart
                 data={duracionPromedioTipoSubtipo}
@@ -228,26 +258,23 @@ const DashboardTTHH = () => {
                 <YAxis label={{ value: 'Días Promedio', angle: -90, position: 'insideLeft' }} />
                 <Tooltip />
                 <Legend />
-                {/* Renderizar barras agrupadas por subtipo */}
                 {Array.from(new Set(duracionPromedioTipoSubtipo.map(d => d.subtipo))).map((subtipo, idx) => (
                   <Bar
                     key={subtipo}
                     dataKey={(d) => (d.subtipo === subtipo ? d.duracionPromedio : 0)}
                     name={subtipo}
                     fill={COLORS[idx % COLORS.length]}
-                    // Asigna una clave que filtre el dato correcto
-                    // Para agrupar por tipo se necesita una pequeña transformación,
-                    // pero recharts no soporta agrupaciones directas sin manipular los datos,
-                    // por simplicidad se hará así, filtrando por subtipo (podría mejorarse)
                   />
                 ))}
               </BarChart>
             </ResponsiveContainer>
-          </div>
+          </Paper>
 
           {/* 2. Conteo permisos por estado y tipo (Barras apiladas) */}
-          <div className="chart-card">
-            <h3>Conteo de Permisos por Estado y Tipo</h3>
+          <Paper elevation={3} sx={{ p: 3, borderRadius: 2, backgroundColor: 'var(--card-bg)', border: '1px solid var(--color-border)' }}>
+            <Typography variant="h6" align="center" gutterBottom sx={{ mb: 3 }}>
+              Conteo de Permisos por Estado y Tipo
+            </Typography>
             <ResponsiveContainer width="100%" height={350}>
               <BarChart
                 data={conteoEstadoTipo}
@@ -275,11 +302,13 @@ const DashboardTTHH = () => {
                 ))}
               </BarChart>
             </ResponsiveContainer>
-          </div>
+          </Paper>
 
           {/* 4. Cantidad de permisos por usuario (Top 10) */}
-          <div className="chart-card">
-            <h3>Top 10 Usuarios con Más Permisos Solicitados</h3>
+          <Paper elevation={3} sx={{ p: 3, borderRadius: 2, backgroundColor: 'var(--card-bg)', border: '1px solid var(--color-border)' }}>
+            <Typography variant="h6" align="center" gutterBottom sx={{ mb: 3 }}>
+              Top 10 Usuarios con Más Permisos Solicitados
+            </Typography>
             <ResponsiveContainer width="100%" height={350}>
               <BarChart
                 data={topUsuarios}
@@ -299,11 +328,13 @@ const DashboardTTHH = () => {
                 <Bar dataKey="total" fill="#8884d8" name="Permisos" />
               </BarChart>
             </ResponsiveContainer>
-          </div>
+          </Paper>
 
           {/* 5. Distribución permisos por rango de duración (Bar) */}
-          <div className="chart-card">
-            <h3>Distribución de Permisos por Rango de Duración</h3>
+          <Paper elevation={3} sx={{ p: 3, borderRadius: 2, backgroundColor: 'var(--card-bg)', border: '1px solid var(--color-border)' }}>
+            <Typography variant="h6" align="center" gutterBottom sx={{ mb: 3 }}>
+              Distribución de Permisos por Rango de Duración
+            </Typography>
             <ResponsiveContainer width="100%" height={350}>
               <BarChart
                 data={permisosPorDuracion}
@@ -323,11 +354,13 @@ const DashboardTTHH = () => {
                 <Bar dataKey="total" fill="#a29bfe" name="Permisos" />
               </BarChart>
             </ResponsiveContainer>
-          </div>
+          </Paper>
 
           {/* 6. Cantidad de permisos por día con estado (LineStacked) */}
-          <div className="chart-card">
-            <h3>Cantidad de Permisos por Día (Segmentado por Estado)</h3>
+          <Paper elevation={3} sx={{ p: 3, borderRadius: 2, backgroundColor: 'var(--card-bg)', border: '1px solid var(--color-border)' }}>
+            <Typography variant="h6" align="center" gutterBottom sx={{ mb: 3 }}>
+              Cantidad de Permisos por Día (Segmentado por Estado)
+            </Typography>
             <ResponsiveContainer width="100%" height={350}>
               <LineChart
                 data={conteoDiarioEstado}
@@ -356,11 +389,13 @@ const DashboardTTHH = () => {
                 ))}
               </LineChart>
             </ResponsiveContainer>
-          </div>
+          </Paper>
           
           {/* 7. Carga de Vacaciones por Tipo de Permiso (barras apiladas) */}
-          <div className="chart-card">
-            <h3>Carga de Vacaciones por Tipo de Permiso</h3>
+          <Paper elevation={3} sx={{ p: 3, borderRadius: 2, backgroundColor: 'var(--card-bg)', border: '1px solid var(--color-border)' }}>
+            <Typography variant="h6" align="center" gutterBottom sx={{ mb: 3 }}>
+              Carga de Vacaciones por Tipo de Permiso
+            </Typography>
             <ResponsiveContainer width="100%" height={350}>
               <BarChart
                 data={vacacionesPorTipo}
@@ -381,10 +416,10 @@ const DashboardTTHH = () => {
                 <Bar dataKey="sinCarga" stackId="a" fill="#d63031" name="Sin Carga" />
               </BarChart>
             </ResponsiveContainer>
-          </div>
+          </Paper>
 
-        </section>
-      </div>
+        </Box>
+      </Box>
     </>
   );
 };

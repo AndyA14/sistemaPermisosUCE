@@ -37,6 +37,23 @@ services:
     # Sobreescribimos solo lo necesario para la red de Docker
     environment:
       DB_HOST: postgresql
+      DB_PORT: 5432
+      DB_USER: postgres
+      DB_PASSWORD: example
+      DB_NAME: iai_sistemapermisos
+      JWT_SECRET: 586E3272357538782F413F4428472B4B6250655368566B597033733676397924
+      URL_FRONTEND: http://192.168.0.179
+      EMAIL_ADDRESS: correo@gmail.com
+      EMAIL_PERMISOS: correo+permisos@gmail.com
+      EMAIL_DIRECTOR: correo+director@gmail.com
+      EMAIL_SOPORTE: correo+soporte@gmail.com
+      EMAIL_PASSWORD: sgvxdfhzsvnjrmzj
+      IMAP_HOST: imap.gmail.com
+      IMAP_PORT: 993
+      IMAP_SECURE: "true"
+      SMTP_HOST: smtp.gmail.com
+      SMTP_PORT: 587
+      SMTP_SECURE: "false"
 
   frontend:
     build:

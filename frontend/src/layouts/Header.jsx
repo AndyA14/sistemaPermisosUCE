@@ -1,159 +1,127 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useContext } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { HiOutlineMenu, HiOutlineSun, HiOutlineMoon, HiOutlineDesktopComputer } from 'react-icons/hi';
 import { logoutUsuario } from '../utils/auth';
-import { getCurrentTheme, getEffectiveTheme, setTheme, THEMES } from '../utils/theme';
-import '../styles/layouts/Header.css';
+
+// 🌟 Importamos nuestro nuevo Contexto de Tema
+import { ThemeContext } from '../context/ThemeContext';
+
+// 📦 Importaciones de Material UI
+import {
+  AppBar, Toolbar, IconButton, Typography, Box, Menu, MenuItem,
+  ListItemIcon, Divider, Tooltip
+} from '@mui/material';
+
+// 🎨 Iconos (Seguimos usando los tuyos)
+import { 
+  HiOutlineMenu, HiOutlineSun, HiOutlineMoon, 
+  HiOutlineUserCircle, HiOutlineLogout 
+} from 'react-icons/hi';
+
+// ❌ Borramos la importación de Header.css y la de utils/theme (ya no se usan)
 
 function Header({ toggleSidebar, isSidebarCollapsed }) {
-  const [menuOpen, setMenuOpen] = useState(false);
-  const [currentTheme, setCurrentTheme] = useState(getCurrentTheme());
+  // Conectamos con el contexto global
+  const { mode, toggleTheme } = useContext(ThemeContext);
   const navigate = useNavigate();
-  const menuRef = useRef(null);
 
-  // Alterna visibilidad del menú
-  const toggleMenu = () => setMenuOpen(prev => !prev);
+  // Control del menú de usuario de Material UI
+  const [anchorEl, setAnchorEl] = useState(null);
+  const menuOpen = Boolean(anchorEl);
 
-  // Cerrar menú si se hace click fuera (mejora UX)
-  useEffect(() => {
-    function handleClickOutside(event) {
-      if (menuRef.current && !menuRef.current.contains(event.target)) {
-        setMenuOpen(false);
-      }
-    }
-    if (menuOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-    } else {
-      document.removeEventListener('mousedown', handleClickOutside);
-    }
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, [menuOpen]);
-
-  // Actualizar estado del tema cuando cambie externamente
-  useEffect(() => {
-    const updateTheme = () => {
-      setCurrentTheme(getCurrentTheme());
-    };
-    
-    // Escuchar cambios en localStorage para sincronizar entre pestañas
-    window.addEventListener('storage', updateTheme);
-    return () => window.removeEventListener('storage', updateTheme);
-  }, []);
+  const handleMenuClick = (event) => {
+    setAnchorEl(event.currentTarget);
+  };
+  
+  const handleMenuClose = () => {
+    setAnchorEl(null);
+  };
 
   const handleLogout = () => {
+    handleMenuClose();
     logoutUsuario();
     navigate('/login');
   };
 
-  // Manejar cambio de tema
-  const handleThemeChange = (theme) => {
-    setTheme(theme);
-    setCurrentTheme(theme);
-    setMenuOpen(false);
-  };
-
-  // Obtener icono del tema actual
-  const getThemeIcon = () => {
-    const effective = getEffectiveTheme();
-    switch (effective) {
-      case THEMES.DARK:
-        return <HiOutlineMoon className="theme-icon" />;
-      case THEMES.LIGHT:
-        return <HiOutlineSun className="theme-icon" />;
-      default:
-        return <HiOutlineSun className="theme-icon" />;
-    }
-  }
-
-
   return (
-    <header className="layout-header">
-      <div className="header-left">
-        <button 
-          className="sidebar-toggle-btn" 
+    <AppBar position="sticky" elevation={2} sx={{ zIndex: (theme) => theme.zIndex.drawer + 1 }}>
+      <Toolbar>
+        {/* Botón para ocultar/mostrar Sidebar */}
+        <IconButton
+          color="inherit"
+          aria-label="toggle sidebar"
           onClick={toggleSidebar}
-          aria-label={isSidebarCollapsed ? 'Expandir sidebar' : 'Colapsar sidebar'}
+          edge="start"
+          sx={{ mr: 2 }}
         >
-          <HiOutlineMenu className={`toggle-icon ${isSidebarCollapsed ? 'collapsed' : ''}`} />
-        </button>
-        <img src="/logoIAI.png" alt="Logo del sistema" className="app-icon" />
-        <h1 className="layout-header-title">Sistema de Permisos para Personal</h1>
-      </div>
+          <HiOutlineMenu />
+        </IconButton>
 
-      <div className="header-right" ref={menuRef}>
-        <button
-          className="menu-button"
-          onClick={toggleMenu}
-          aria-haspopup="true"
-          aria-expanded={menuOpen}
-          aria-label="Menú de usuario"
+        {/* Logo */}
+        <Box 
+          component="img" 
+          src="/logoIAI.png" 
+          alt="Logo del sistema" 
+          sx={{ height: 40, mr: 2, borderRadius: 1 }} 
+        />
+
+        {/* Título (Se oculta en celulares muy pequeños para no romper el diseño) */}
+        <Typography 
+          variant="h6" 
+          component="div" 
+          sx={{ flexGrow: 1, fontWeight: 'bold', display: { xs: 'none', sm: 'block' } }}
         >
-          ☰
-        </button>
+          Sistema de Permisos
+        </Typography>
 
-        <button
-          className="theme-toggle-btn"
-          onClick={() => handleThemeChange(getEffectiveTheme() === THEMES.LIGHT ? THEMES.DARK : THEMES.LIGHT)}
-          aria-label="Cambiar tema"
-          title={`Cambiar a modo ${getEffectiveTheme() === THEMES.LIGHT ? 'oscuro' : 'claro'}`}
+        {/* Iconos de la derecha */}
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          
+          {/* Botón mágico de Claro/Oscuro */}
+          <Tooltip title={`Cambiar a modo ${mode === 'light' ? 'oscuro' : 'claro'}`}>
+            <IconButton color="inherit" onClick={toggleTheme}>
+              {mode === 'dark' ? <HiOutlineSun size={24} /> : <HiOutlineMoon size={24} />}
+            </IconButton>
+          </Tooltip>
+
+          {/* Botón del menú de usuario */}
+          <Tooltip title="Cuenta y opciones">
+            <IconButton
+              color="inherit"
+              onClick={handleMenuClick}
+              aria-controls={menuOpen ? 'user-menu' : undefined}
+              aria-haspopup="true"
+              aria-expanded={menuOpen ? 'true' : undefined}
+            >
+              <HiOutlineUserCircle size={28} />
+            </IconButton>
+          </Tooltip>
+        </Box>
+
+        {/* Menú Desplegable (Material UI maneja los clics afuera y la animación) */}
+        <Menu
+          id="user-menu"
+          anchorEl={anchorEl}
+          open={menuOpen}
+          onClose={handleMenuClose}
+          PaperProps={{
+            elevation: 3,
+            sx: { mt: 1.5, minWidth: 200, borderRadius: 2 }
+          }}
+          transformOrigin={{ horizontal: 'right', vertical: 'top' }}
+          anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
         >
-          {getThemeIcon()}
-        </button>
-
-        {menuOpen && (
-          <ul className="dropdown-menu" role="menu">
-            <li className="theme-submenu" role="none">
-              <span className="submenu-label">Tema</span>
-              <div className="theme-options">
-                <button
-                  onClick={() => handleThemeChange(THEMES.LIGHT)}
-                  className={`theme-option ${currentTheme === THEMES.LIGHT ? 'active' : ''}`}
-                  role="menuitem"
-                  title="Modo claro"
-                >
-                  <HiOutlineSun />
-                  <span>Claro</span>
-                </button>
-                <button
-                  onClick={() => handleThemeChange(THEMES.DARK)}
-                  className={`theme-option ${currentTheme === THEMES.DARK ? 'active' : ''}`}
-                  role="menuitem"
-                  title="Modo oscuro"
-                >
-                  <HiOutlineMoon />
-                  <span>Oscuro</span>
-                </button>
-                <button
-                  onClick={() => handleThemeChange(THEMES.SYSTEM)}
-                  className={`theme-option ${currentTheme === THEMES.SYSTEM ? 'active' : ''}`}
-                  role="menuitem"
-                  title="Seguir sistema"
-                >
-                  <HiOutlineDesktopComputer />
-                  <span>Sistema</span>
-                </button>
-              </div>
-            </li>
-            <li role="none">
-              <Link to="/perfil" onClick={() => setMenuOpen(false)} role="menuitem" tabIndex={0}>
-                Perfil
-              </Link>
-            </li>
-            <li role="none">
-              <button
-                onClick={() => { setMenuOpen(false); handleLogout(); }}
-                className="logout-btn"
-                role="menuitem"
-              >
-                Cerrar sesión
-              </button>
-            </li>
-          </ul>
-        )}
-      </div>
-    </header>
+          <MenuItem component={Link} to="/perfil" onClick={handleMenuClose}>
+            <ListItemIcon><HiOutlineUserCircle size={20} /></ListItemIcon>
+            Mi Perfil
+          </MenuItem>
+          <Divider />
+          <MenuItem onClick={handleLogout} sx={{ color: 'error.main' }}>
+            <ListItemIcon><HiOutlineLogout size={20} color="#d32f2f" /></ListItemIcon>
+            Cerrar sesión
+          </MenuItem>
+        </Menu>
+      </Toolbar>
+    </AppBar>
   );
 }
 

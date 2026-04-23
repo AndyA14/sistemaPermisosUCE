@@ -1,5 +1,5 @@
 // src/service/mail.responder.service.js
-const mailService = require('../services/mail.service');
+const mailService = require('../service/mail.service');
 
 /**
  * Responde a un correo de permiso notificando al solicitante

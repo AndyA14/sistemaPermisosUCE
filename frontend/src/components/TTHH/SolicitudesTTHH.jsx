@@ -100,7 +100,23 @@ function SolicitudesTTHH() {
   // VISTA DE DETALLE
   // ==========================================
   if (correoSeleccionado) {
-    const url = adjuntoSeleccionado ? obtenerUrlDocumento(adjuntoSeleccionado.filename) : '';
+    let url = '';
+    if (adjuntoSeleccionado) {
+      // 1. Detectamos si el adjunto es la Evidencia o el PDF generado por el sistema
+      // (Asumimos que el PDF del sistema termina en _Permiso.pdf como en tu captura)
+      const esEvidencia = !adjuntoSeleccionado.filename.endsWith('_Permiso.pdf');
+
+      // 2. Si es la evidencia, ignoramos el nombre corrupto del correo y extraemos 
+      // el nombre perfecto directamente del objeto de la base de datos.
+      // ⚠️ OJO: Cambia ".documento" si en tu backend la columna se llama ".archivo" o ".evidencia"
+      const nombreSeguro = (esEvidencia && permisoSeleccionado?.documento) 
+        ? permisoSeleccionado.documento 
+        : adjuntoSeleccionado.filename;
+
+      // 3. Generamos la URL con el nombre correcto
+      url = obtenerUrlDocumento(nombreSeguro);
+    }
+
     const esPDF = url.toLowerCase().endsWith('.pdf');
 
     return (
@@ -215,15 +231,98 @@ function SolicitudesTTHH() {
               </Paper>
             </Grid>
 
-            {/* Columna Derecha: Previsualización del correo */}
-            <Grid item xs={12} md={7}>
-              <Paper elevation={3} sx={{ borderRadius: 2, overflow: 'hidden', height: { xs: '600px', md: '100%' }, minHeight: '600px', border: '1px solid var(--color-border)' }}>
-                <iframe
-                  srcDoc={correoSeleccionado.html || correoSeleccionado.text || '<p>(sin contenido)</p>'}
-                  title="Correo Detallado"
-                  style={{ width: '100%', height: '100%', border: 'none', backgroundColor: 'white' }}
-                />
-              </Paper>
+            {/* COLUMNA DERECHA: VISTA PREVIA PROFESIONAL (ESTILO CARTA) */}
+            <Grid item xs={12} md={7} lg={8}>
+              <Box sx={{ 
+                width: '100%', 
+                display: 'flex', 
+                justifyContent: 'center', 
+                backgroundColor: '#eaeff2', // Fondo gris de "escritorio"
+                py: 4,
+                borderRadius: 2,
+                overflowY: 'auto',
+                maxHeight: '100vh',
+                position: { md: 'sticky' }, 
+                top: { md: 24 } 
+              }}>
+                <Paper 
+                  elevation={6} 
+                  sx={{ 
+                    width: '100%', 
+                    maxWidth: '800px', 
+                    minHeight: '1050px', // Altura proporcional a A4
+                    padding: { xs: 2, sm: '1.3cm 2cm' }, // Tus márgenes exactos
+                    backgroundColor: '#ffffff', 
+                    color: '#2c3e50', 
+                    fontFamily: '"Times New Roman", Times, serif', 
+                    borderRadius: 1, 
+                    boxSizing: 'border-box',
+                    display: 'flex',
+                    flexDirection: 'column'
+                  }}
+                >
+                  {/* Título interno del visor */}
+                  <Typography 
+                    variant="caption" 
+                    sx={{ 
+                      display: 'block', 
+                      textAlign: 'center', 
+                      mb: 2, 
+                      color: 'grey.400', 
+                      textTransform: 'uppercase',
+                      letterSpacing: 1,
+                      borderBottom: '1px solid #eee',
+                      pb: 1
+                    }}
+                  >
+                  </Typography>
+
+                  <iframe
+                    srcDoc={`
+                      <html>
+                        <head>
+                          <style>
+                            @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&display=swap');
+                            
+                            body { 
+                              margin: 0; 
+                              padding: 0; 
+                              font-family: "Times New Roman", Times, serif; 
+                              line-height: 1.5;
+                              color: #2c3e50;
+                            }
+                            
+                            /* Adaptamos los estilos que me pasaste para que funcionen dentro del HTML del correo */
+                            .carta-body { width: 100%; }
+                            .carta-encabezado { font-weight: 600; text-transform: uppercase; text-align: center; margin-bottom: 2rem; }
+                            .fecha-derecha { text-align: right; margin-bottom: 1.5rem; }
+                            .destinatario-derecha { text-align: left; margin-bottom: 1.5rem; line-height: 1.3; }
+                            .saludo { font-weight: 600; margin-bottom: 1.5rem; }
+                            .contenido-justificado { text-align: justify; margin: 1rem 0; word-break: break-word; }
+                            .firma-derecha { margin-top: 3rem; }
+                            
+                            /* Forzamos a que las tablas del correo ocupen todo el ancho */
+                            table { width: 100% !important; border-collapse: collapse; }
+                            img { max-width: 150px; height: auto; display: block; margin: 0 auto 1rem auto; }
+                          </style>
+                        </head>
+                        <body>
+                          <div class="carta-body">
+                            ${correoSeleccionado.html || `<div style="white-space: pre-wrap;">${correoSeleccionado.text}</div>`}
+                          </div>
+                        </body>
+                      </html>
+                    `}
+                    title="Visualizador de Documento"
+                    style={{ 
+                      width: '100%', 
+                      flexGrow: 1, 
+                      border: 'none',
+                      overflow: 'hidden'
+                    }}
+                  />
+                </Paper>
+              </Box>
             </Grid>
           </Grid>
 

@@ -32,29 +32,33 @@ const CartaSeguimientoPermiso = ({ permiso }) => {
   return (
     <CartaLayout fechaSolicitud={fecha_solicitud}>
       <h3 style={{ textAlign: 'center', marginBottom: '1rem' }}>
-        Seguimiento de Solicitud de Permiso ({tipo?.nombre}{tipo?.sub_tipo ? ` - ${tipo.sub_tipo}` : ''})
+        Seguimiento de Solicitud de Permiso ({tipo?.nombre || 'Desconocido'}{tipo?.sub_tipo ? ` - ${tipo.sub_tipo}` : ''})
       </h3>
 
-      <p><strong>Solicitante:</strong> {usuario.nombres} {usuario.apellidos} (<strong>CI:</strong> {usuario.ci})</p>
-      <p><strong>Tipo de Permiso:</strong> {tipo?.nombre}{tipo?.sub_tipo ? ` - ${tipo.sub_tipo}` : ''}</p>
-      <p><strong>Fecha/Fechas:</strong> {fecha_inicio} {fecha_inicio !== fecha_fin ? `hasta ${fecha_fin}` : ''}</p>
+      {/* 🚨 PROTECCIÓN APLICADA AQUÍ 🚨 */}
+      <p>
+        <strong>Solicitante:</strong> {usuario?.nombres || 'Usuario'} {usuario?.apellidos || 'Desconocido'} (<strong>CI:</strong> {usuario?.ci || 'N/A'})
+      </p>
+      
+      <p><strong>Tipo de Permiso:</strong> {tipo?.nombre || 'Desconocido'}{tipo?.sub_tipo ? ` - ${tipo.sub_tipo}` : ''}</p>
+      <p><strong>Fecha/Fechas:</strong> {fecha_inicio || '—'} {fecha_inicio !== fecha_fin ? `hasta ${fecha_fin || '—'}` : ''}</p>
       <p><strong>Horas:</strong> {hora_inicio || '—'} a {hora_fin || '—'}</p>
       <p><strong>Motivo:</strong> <em>{descripcion || '—'}</em></p>
-      <p><strong>Estado General:</strong> {estado_general?.toUpperCase()}</p>
+      <p><strong>Estado General:</strong> {estado_general?.toUpperCase() || 'DESCONOCIDO'}</p>
       <p><strong>Carga a Vacaciones:</strong> {carga_vacaciones ? 'Sí' : 'No'}</p>
 
       <hr />
 
       <h4>Revisión Talento Humano</h4>
-      <p><strong>Estado de Revisión:</strong> {permiso.revisado_tthh ? '✔️ Revisado' : '⏳ Pendiente'}</p>
+      <p><strong>Estado de Revisión:</strong> {permiso?.revisado_tthh ? '✔️ Revisado' : '⏳ Pendiente'}</p>
       <p><strong>Fecha de Revisión:</strong> {formatFecha(fecha_revision_tthh)}</p>
       <p><strong>Observación:</strong> <em>{observacion_tthh || '—'}</em></p>
 
       <h4>Revisión Dirección</h4>
       <p><strong>Estado de Revisión:</strong> {
-        permiso.estado_director === true 
+        permiso?.estado_director === true 
           ? '✔️ Revisado' 
-          : permiso.estado_director === false 
+          : permiso?.estado_director === false 
             ? '❌ Denegado (revisado)' 
             : '⏳ Pendiente'
       }</p>

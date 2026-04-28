@@ -14,7 +14,11 @@ import {
   Stack,
   IconButton
 } from '@mui/material';
-import { UploadFile as UploadFileIcon, Send as SendIcon, Delete as DeleteIcon } from '@mui/icons-material';
+import { 
+  UploadFile as UploadFileIcon, 
+  Send as SendIcon, 
+  Delete as DeleteIcon 
+} from '@mui/icons-material';
 import { toast, ToastContainer } from 'react-toastify';
 
 import {
@@ -94,10 +98,10 @@ function PermisosForm() {
     }));
   };
 
-// === LÓGICA INTELIGENTE DE EVIDENCIA ===
+  // === LÓGICA INTELIGENTE DE EVIDENCIA ===
   const requiereEvidencia = form.subtipo ?
   (
-    // Da TRUE si contiene "requiere" o "con_justificaci" (ahora en minúsculas)
+    // Da TRUE si contiene "requiere" o "con_" 
     (form.subtipo.includes('requiere') || form.subtipo.includes('con_')) && 
     // Da FALSE si contiene "sin_" (Evita el falso positivo de "sin evidencia")
     !form.subtipo.includes('sin_')
@@ -248,27 +252,23 @@ function PermisosForm() {
 
     const extension = file.name.split('.').pop();
 
-    // 🔹 Función para limpiar texto (la mejoras un poco)
     const limpiarTexto = (texto) =>
       texto
         .normalize('NFD')
-        .replace(/[\u0300-\u036f]/g, '') // elimina tildes
+        .replace(/[\u0300-\u036f]/g, '') 
         .replace(/ñ/gi, 'n')
-        .replace(/[^a-zA-Z0-9]/g, '_')   // 🔥 NUEVO: solo deja letras y números
-        .replace(/_+/g, '_')             // evita múltiples _
-        .replace(/^_|_$/g, '')           // limpia _ al inicio/fin
+        .replace(/[^a-zA-Z0-9]/g, '_')  
+        .replace(/_+/g, '_')            
+        .replace(/^_|_$/g, '')          
         .toLowerCase();
 
-    // 🔹 Nombres limpios
     const nombres = perfil?.nombres ? limpiarTexto(perfil.nombres) : 'nombre';
     const apellidos = perfil?.apellidos ? limpiarTexto(perfil.apellidos) : 'apellido';
 
-    // 🔥 AQUÍ ESTÁ LA CORRECCIÓN CLAVE
     const subtipoLimpio = form.subtipo
       ? limpiarTexto(form.subtipo)
       : limpiarTexto(asuntoDefault || 'documento');
 
-    // 🔹 Manejo de fechas (tu lógica original intacta)
     let fechaRango = form.fecha || 'sin_fecha';
 
     if (tipoSeleccionado?.nombre === 'Falta') {
@@ -291,12 +291,10 @@ function PermisosForm() {
 
     const timestamp = Date.now();
 
-    // 🔹 Nombre final SEGURO
     const nombreArchivo = `${apellidos}_${nombres}_${fechaRango}_${
       tipoSeleccionado?.nombre === 'Falta' ? timestamp + '_' : ''
     }${subtipoLimpio}.${extension}`;
 
-    // 🔹 Crear archivo renombrado
     const archivoRenombrado = new File([file], nombreArchivo, {
       type: file.type
     });
@@ -408,33 +406,28 @@ function PermisosForm() {
                   </>
                 )}
 
-                {/* === CAJA DE SUBIDA DE EVIDENCIA (ÚNICA Y DINÁMICA PARA TODOS) === */}
-                {/* 1. EL BOTÓN CONDICIONAL (ESTO ES LO NUEVO) */}
+                {/* === BOTÓN SUBIR DOCUMENTO (SOLO SI REQUIERE EVIDENCIA) === */}
                 {requiereEvidencia && !archivo && (
-                  <Box sx={{ mt: 2 }}>
-                    <Typography variant="body2" color="error" sx={{ mb: 1, fontWeight: 'bold' }}>
-                      * Este permiso requiere un documento de evidencia o certificado.
-                    </Typography>
-                    <Button
-                      variant="outlined"
-                      component="label"
-                      fullWidth
-                      startIcon={<UploadFileIcon />}
-                      sx={{ py: 1.5, borderStyle: 'dashed', borderWidth: 2, textTransform: 'none' }}
-                    >
-                      Seleccionar Archivo (PDF, JPG, PNG)
-                      {/* Aquí conectamos la función que ya tenías programada */}
-                      <input
-                        type="file"
-                        hidden
-                        accept=".pdf, image/*"
-                        onChange={(e) => handleFileUpload(e, 'Evidencia')}
-                      />
-                    </Button>
-                  </Box>
+                  <Button
+                    variant="outlined"
+                    component="label"
+                    startIcon={<UploadFileIcon />}
+                    sx={{
+                      mt: 2,
+                      borderRadius: 2,
+                      textTransform: 'none'
+                    }}
+                  >
+                    Subir Documento
+                    <input
+                      type="file"
+                      hidden
+                      onChange={(e) => handleFileUpload(e, 'documento')}
+                    />
+                  </Button>
                 )}
 
-                {/* 2. LA VISTA DEL ARCHIVO CARGADO (ESTO YA LO TENÍAS) */}
+                {/* === CAJA DE SUBIDA DE EVIDENCIA (ÚNICA Y DINÁMICA PARA TODOS) === */}
                 {archivo && (
                   <Box sx={{
                     display: 'flex',

@@ -9,7 +9,8 @@ import {
   Paper, 
   InputAdornment, 
   Alert,
-  IconButton
+  IconButton,
+  useTheme // <-- Agregado para soportar modo claro/oscuro
 } from '@mui/material';
 import { 
   Lock as LockIcon,
@@ -17,54 +18,65 @@ import {
   VisibilityOff
 } from '@mui/icons-material';
 
+// === IMPORTACIONES DE VALIDACIÓN (RHF + ZOD) ===
+import { useForm, Controller } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+
 import { resetearContrasena } from '../services/api';
 import LoadingModal from '../components/LoadingModal';
+
+// === ESQUEMA DE VALIDACIÓN ZOD ===
+const resetSchema = z.object({
+  contrasena: z.string()
+    .min(8, 'Debe tener al menos 8 caracteres')
+    .regex(/[A-Z]/, 'Debe contener al menos una mayúscula')
+    .regex(/[a-z]/, 'Debe contener al menos una minúscula')
+    .regex(/\d/, 'Debe contener al menos un número'),
+  confirmar: z.string()
+}).refine((data) => data.contrasena === data.confirmar, {
+  message: 'Las contraseñas no coinciden',
+  path: ['confirmar'], // El error se mostrará en el campo "confirmar"
+});
 
 function ResetPassword() {
   const { token } = useParams();
   const navigate = useNavigate();
+  const theme = useTheme();
 
-  const [contrasena, setContrasena] = useState('');
-  const [confirmar, setConfirmar] = useState('');
   const [mensaje, setMensaje] = useState('');
-  const [error, setError] = useState('');
+  const [errorAPI, setErrorAPI] = useState('');
   const [loading, setLoading] = useState(false);
   
-  // Estados para mostrar contraseñas (mejora UX)
+  // Estados para mostrar/ocultar contraseñas
   const [showPass, setShowPass] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
 
-  const validarContrasena = (pwd) => {
-    return pwd.length >= 8 &&
-           /[A-Z]/.test(pwd) &&
-           /[a-z]/.test(pwd) &&
-           /\d/.test(pwd);
-  };
+  // === CONFIGURACIÓN DE REACT HOOK FORM ===
+  const {
+    control,
+    handleSubmit,
+    formState: { errors }
+  } = useForm({
+    resolver: zodResolver(resetSchema),
+    defaultValues: {
+      contrasena: '',
+      confirmar: ''
+    },
+    mode: 'onChange' // Valida mientras el usuario escribe
+  });
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const onSubmitForm = async (data) => {
     setMensaje('');
-    setError('');
+    setErrorAPI('');
     setLoading(true);
 
-    if (contrasena !== confirmar) {
-      setError('Las contraseñas no coinciden.');
-      setLoading(false);
-      return;
-    }
-
-    if (!validarContrasena(contrasena)) {
-      setError('Debe tener al menos 8 caracteres, una mayúscula, una minúscula y un número.');
-      setLoading(false);
-      return;
-    }
-
     try {
-      const data = await resetearContrasena(token, contrasena);
-      setMensaje(data.mensaje || 'Contraseña actualizada correctamente.');
+      const res = await resetearContrasena(token, data.contrasena);
+      setMensaje(res.mensaje || 'Contraseña actualizada correctamente.');
       setTimeout(() => navigate('/login'), 3000);
     } catch (err) {
-      setError(err.message || 'Error al restablecer la contraseña.');
+      setErrorAPI(err.message || 'Error al restablecer la contraseña.');
     } finally {
       setLoading(false);
     }
@@ -77,7 +89,10 @@ function ResetPassword() {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        background: 'var(--login-bg-gradient, linear-gradient(135deg, #1a237e 0%, #0d47a1 100%))',
+        // Fondo dinámico igualado a Login.jsx
+        background: theme.palette.mode === 'dark' 
+          ? 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)' 
+          : 'linear-gradient(135deg, #1a237e 0%, #0d47a1 100%)',
         padding: 2,
       }}
     >
@@ -90,76 +105,100 @@ function ResetPassword() {
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
-            backgroundColor: 'var(--card-bg, rgba(255, 255, 255, 0.07))',
+            // Color de tarjeta dinámico igualado a Login.jsx
+            backgroundColor: theme.palette.mode === 'dark' ? 'rgba(30, 41, 59, 0.9)' : 'rgba(255, 255, 255, 0.95)',
             backdropFilter: 'blur(10px)',
-            color: 'var(--color-text)',
             transition: 'transform 0.3s ease',
             '&:hover': {
               transform: 'translateY(-5px)',
             },
           }}
         >
-          <Typography variant="h5" component="h1" gutterBottom sx={{ color: 'var(--color-link)', fontWeight: 'bold', mb: 3, textAlign: 'center' }}>
+          <Typography 
+            variant="h5" 
+            component="h1" 
+            gutterBottom 
+            sx={{ 
+              color: theme.palette.mode === 'dark' ? '#38bdf8' : '#1a237e', 
+              fontWeight: 'bold', 
+              mb: 3, 
+              textAlign: 'center' 
+            }}
+          >
             Restablecer Contraseña
           </Typography>
 
-          <Box component="form" onSubmit={handleSubmit} sx={{ width: '100%' }}>
+          <Box component="form" onSubmit={handleSubmit(onSubmitForm)} sx={{ width: '100%' }}>
             
-            {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+            {errorAPI && <Alert severity="error" sx={{ mb: 2 }}>{errorAPI}</Alert>}
             {mensaje && <Alert severity="success" sx={{ mb: 2 }}>{mensaje}</Alert>}
 
-            <TextField
-              fullWidth
-              margin="normal"
-              label="Nueva Contraseña"
-              type={showPass ? 'text' : 'password'}
-              placeholder="Ingrese nueva contraseña"
-              value={contrasena}
-              onChange={(e) => setContrasena(e.target.value)}
-              variant="outlined"
-              required
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <LockIcon sx={{ color: 'var(--icon-color)' }} />
-                  </InputAdornment>
-                ),
-                endAdornment: (
-                  <InputAdornment position="end">
-                    <IconButton onClick={() => setShowPass(!showPass)} edge="end">
-                      {showPass ? <VisibilityOff /> : <Visibility />}
-                    </IconButton>
-                  </InputAdornment>
-                )
-              }}
-              sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
+            {/* Campo Nueva Contraseña */}
+            <Controller
+              name="contrasena"
+              control={control}
+              render={({ field }) => (
+                <TextField
+                  {...field}
+                  fullWidth
+                  margin="normal"
+                  label="Nueva Contraseña"
+                  type={showPass ? 'text' : 'password'}
+                  placeholder="Ingrese nueva contraseña"
+                  variant="outlined"
+                  error={!!errors.contrasena}
+                  helperText={errors.contrasena?.message}
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <LockIcon sx={{ color: 'var(--color-text-secondary)' }} />
+                      </InputAdornment>
+                    ),
+                    endAdornment: (
+                      <InputAdornment position="end">
+                        <IconButton onClick={() => setShowPass(!showPass)} edge="end" sx={{ color: 'var(--color-text-secondary)' }}>
+                          {showPass ? <VisibilityOff /> : <Visibility />}
+                        </IconButton>
+                      </InputAdornment>
+                    )
+                  }}
+                  sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
+                />
+              )}
             />
 
-            <TextField
-              fullWidth
-              margin="normal"
-              label="Confirmar Contraseña"
-              type={showConfirm ? 'text' : 'password'}
-              placeholder="Repita la contraseña"
-              value={confirmar}
-              onChange={(e) => setConfirmar(e.target.value)}
-              variant="outlined"
-              required
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <LockIcon sx={{ color: 'var(--icon-color)' }} />
-                  </InputAdornment>
-                ),
-                endAdornment: (
-                  <InputAdornment position="end">
-                    <IconButton onClick={() => setShowConfirm(!showConfirm)} edge="end">
-                      {showConfirm ? <VisibilityOff /> : <Visibility />}
-                    </IconButton>
-                  </InputAdornment>
-                )
-              }}
-              sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
+            {/* Campo Confirmar Contraseña */}
+            <Controller
+              name="confirmar"
+              control={control}
+              render={({ field }) => (
+                <TextField
+                  {...field}
+                  fullWidth
+                  margin="normal"
+                  label="Confirmar Contraseña"
+                  type={showConfirm ? 'text' : 'password'}
+                  placeholder="Repita la contraseña"
+                  variant="outlined"
+                  error={!!errors.confirmar}
+                  helperText={errors.confirmar?.message}
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <LockIcon sx={{ color: 'var(--color-text-secondary)' }} />
+                      </InputAdornment>
+                    ),
+                    endAdornment: (
+                      <InputAdornment position="end">
+                        <IconButton onClick={() => setShowConfirm(!showConfirm)} edge="end" sx={{ color: 'var(--color-text-secondary)' }}>
+                          {showConfirm ? <VisibilityOff /> : <Visibility />}
+                        </IconButton>
+                      </InputAdornment>
+                    )
+                  }}
+                  sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
+                />
+              )}
             />
 
             <Button
@@ -173,8 +212,11 @@ function ResetPassword() {
                 py: 1.5,
                 borderRadius: 2,
                 fontWeight: 'bold',
-                backgroundColor: 'var(--color-link)',
-                '&:hover': { backgroundColor: 'var(--color-link-hover)' }
+                // Botón dinámico igualado a Login.jsx
+                backgroundColor: theme.palette.mode === 'dark' ? '#0ea5e9' : '#1a237e',
+                '&:hover': { 
+                  backgroundColor: theme.palette.mode === 'dark' ? '#0284c7' : '#0d47a1' 
+                }
               }}
             >
               {loading ? "Restableciendo..." : "Restablecer"}

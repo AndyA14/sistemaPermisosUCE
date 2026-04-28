@@ -91,6 +91,7 @@ function SolicitudesDirector() {
       setPermisoSeleccionado(null);
       setAdjuntoSeleccionado(null);
       setObservacion('');
+      setCargaVacaciones(false); // Reset de checkbox
       setError(null);
     } catch (e) {
       toast.error(`❌ Error al autorizar: ${e.message}`, {
@@ -119,6 +120,7 @@ function SolicitudesDirector() {
       setPermisoSeleccionado(null);
       setAdjuntoSeleccionado(null);
       setObservacion('');
+      setCargaVacaciones(false); // Reset de checkbox
       setError(null);
     } catch (e) {
       toast.error(`⚠️ Error al denegar: ${e.message}`, {
@@ -142,20 +144,16 @@ function SolicitudesDirector() {
   // VISTA DE DETALLE
   // ==========================================
   if (correoSeleccionado) {
+    // === LÓGICA INTELIGENTE DE VACACIONES (AQUÍ SE CALCULA PARA EL RENDER) ===
+    const subtipo = permisoSeleccionado?.tipo?.sub_tipo?.toLowerCase() || '';
+    const requiereEvidencia = (subtipo.includes('requiere') || subtipo.includes('con_')) && !subtipo.includes('sin_');
+
     let url = '';
     if (adjuntoSeleccionado) {
-      // 1. Detectamos si el adjunto es la Evidencia o el PDF generado por el sistema
-      // (Asumimos que el PDF del sistema termina en _Permiso.pdf como en tu captura)
       const esEvidencia = !adjuntoSeleccionado.filename.endsWith('_Permiso.pdf');
-
-      // 2. Si es la evidencia, ignoramos el nombre corrupto del correo y extraemos 
-      // el nombre perfecto directamente del objeto de la base de datos.
-      // ⚠️ OJO: Cambia ".documento" si en tu backend la columna se llama ".archivo" o ".evidencia"
       const nombreSeguro = (esEvidencia && permisoSeleccionado?.documento) 
         ? permisoSeleccionado.documento 
         : adjuntoSeleccionado.filename;
-
-      // 3. Generamos la URL con el nombre correcto
       url = obtenerUrlDocumento(nombreSeguro);
     }
 
@@ -171,6 +169,7 @@ function SolicitudesDirector() {
               setPermisoSeleccionado(null);
               setAdjuntoSeleccionado(null);
               setObservacion('');
+              setCargaVacaciones(false);
               setError(null);
             }}
             sx={{ mb: 3, color: 'var(--color-text-secondary)', textTransform: 'none' }}
@@ -178,7 +177,6 @@ function SolicitudesDirector() {
             Volver a la lista
           </Button>
 
-          {/* ENCABEZADO */}
           <Paper elevation={3} sx={{ p: 3, mb: 4, borderRadius: 2, backgroundColor: 'var(--color-header-bg)', color: 'var(--color-header-text)' }}>
             <Typography variant="h5" gutterBottom sx={{ fontWeight: 'bold' }}>
               {correoSeleccionado.subject}
@@ -196,10 +194,7 @@ function SolicitudesDirector() {
             </Grid>
           </Paper>
 
-          {/* CONTENIDO PRINCIPAL: PERMISO E IFRAME */}
           <Grid container spacing={4}>
-            
-            {/* Columna Izquierda: Detalles y Revisión */}
             <Grid item xs={12} md={5} lg={4}>
               <Paper elevation={3} sx={{ p: 4, borderRadius: 2, backgroundColor: 'var(--card-bg)', height: '100%', display: 'flex', flexDirection: 'column' }}>
                 <Typography variant="h6" gutterBottom sx={{ fontWeight: 600, color: 'var(--color-text)', display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -267,17 +262,24 @@ function SolicitudesDirector() {
                     variant="outlined"
                   />
 
+                  {/* === CHECKBOX CONDICIONAL === */}
                   <FormControlLabel
                     control={
                       <Checkbox 
                         checked={cargaVacaciones} 
                         onChange={e => setCargaVacaciones(e.target.checked)} 
                         color="primary"
+                        disabled={requiereEvidencia}
                       />
                     }
                     label="Cargar a vacaciones"
                     sx={{ color: 'var(--color-text)' }}
                   />
+                  {requiereEvidencia && (
+                    <Typography variant="caption" color="error" sx={{ mt: -1, ml: 3 }}>
+                      * No aplica para permisos que requieren justificación médica/legal.
+                    </Typography>
+                  )}
                 </Stack>
 
                 <Stack direction="row" spacing={2}>
@@ -315,14 +317,13 @@ function SolicitudesDirector() {
               </Paper>
             </Grid>
 
-            {/* COLUMNA DERECHA: VISTA PREVIA PROFESIONAL */}
             <Grid item xs={12} md={7} lg={8}>
               <Box
                 sx={{
                   width: '100%',
                   display: 'flex',
                   justifyContent: 'center',
-                  backgroundColor: '#0f172a', // fondo tipo dashboard (como tu imagen)
+                  backgroundColor: '#0f172a',
                   py: 4,
                   borderRadius: 2,
                   overflowY: 'auto',
@@ -331,7 +332,6 @@ function SolicitudesDirector() {
                   top: { md: 24 }
                 }}
               >
-                {/* HOJA A4 */}
                 <Paper
                   elevation={6}
                   sx={{
@@ -346,7 +346,6 @@ function SolicitudesDirector() {
                     color: '#1e2a3a'
                   }}
                 >
-                  {/* CONTENIDO DEL DOCUMENTO */}
                   <Box
                     sx={{
                       '& img': {
@@ -387,60 +386,52 @@ function SolicitudesDirector() {
                   >
                     {correoSeleccionado?.html ? (
                       <div
-                         dangerouslySetInnerHTML={{
-                          __html: `
-                            <style>
-                              body {
-                                font-family: "Times New Roman", serif;
-                                color: #1e2a3a;
-                                line-height: 1.6;
-                              }
-
-                              img {
-                                display: block;
-                                margin: 0 auto;
-                                max-width: 120px;
-                              }
-
-                              .titulo-institucion {
-                                text-align: center;
-                                font-weight: bold;
-                                text-transform: uppercase;
-                                font-size: 14px;
-                                margin-bottom: 20px;
-                              }
-
-                              .fecha {
-                                text-align: right;
-                                font-size: 13px;
-                                margin-bottom: 20px;
-                              }
-
-                              .destinatario {
-                                font-size: 13px;
-                                margin-bottom: 20px;
-                              }
-
-                              .texto {
-                                text-align: justify;
-                                font-size: 13.5px;
-                                margin-bottom: 15px;
-                              }
-
-                              .firma {
-                                margin-top: 40px;
-                                font-size: 13px;
-                              }
-
-                              table {
-                                width: 100%;
-                                border-collapse: collapse;
-                              }
-                            </style>
-
-                            ${correoSeleccionado.html}
-                          `
-                        }}
+                           dangerouslySetInnerHTML={{
+                             __html: `
+                               <style>
+                                 body {
+                                   font-family: "Times New Roman", serif;
+                                   color: #1e2a3a;
+                                   line-height: 1.6;
+                                 }
+                                 img {
+                                   display: block;
+                                   margin: 0 auto;
+                                   max-width: 120px;
+                                 }
+                                 .titulo-institucion {
+                                   text-align: center;
+                                   font-weight: bold;
+                                   text-transform: uppercase;
+                                   font-size: 14px;
+                                   margin-bottom: 20px;
+                                 }
+                                 .fecha {
+                                   text-align: right;
+                                   font-size: 13px;
+                                   margin-bottom: 20px;
+                                 }
+                                 .destinatario {
+                                   font-size: 13px;
+                                   margin-bottom: 20px;
+                                 }
+                                 .texto {
+                                   text-align: justify;
+                                   font-size: 13.5px;
+                                   margin-bottom: 15px;
+                                 }
+                                 .firma {
+                                   margin-top: 40px;
+                                   font-size: 13px;
+                                 }
+                                 table {
+                                   width: 100%;
+                                   border-collapse: collapse;
+                                 }
+                               </style>
+                               ${correoSeleccionado.html}
+                             `
+                            }}
                       />
                     ) : (
                       <div style={{ whiteSpace: 'pre-wrap' }}>
@@ -453,7 +444,6 @@ function SolicitudesDirector() {
             </Grid>
           </Grid>
 
-          {/* ADJUNTOS */}
           <Paper elevation={3} sx={{ mt: 4, p: 4, borderRadius: 2, backgroundColor: 'var(--card-bg)' }}>
             <Typography variant="h6" gutterBottom sx={{ fontWeight: 600, color: 'var(--color-text)' }}>
               Adjuntos:
@@ -553,6 +543,7 @@ function SolicitudesDirector() {
                               setPermisoSeleccionado(item ? item.permiso : null);
                               setAdjuntoSeleccionado(null);
                               setObservacion('');
+                              setCargaVacaciones(false);
                               setError(null);
                             }}
                             sx={{ color: 'var(--color-link, #2980b9)' }}

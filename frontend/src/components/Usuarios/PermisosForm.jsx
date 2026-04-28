@@ -14,8 +14,11 @@ import {
   Stack,
   IconButton
 } from '@mui/material';
-import { IconButton } from '@mui/material';
-import { UploadFile as UploadFileIcon, Send as SendIcon, Delete as DeleteIcon } from '@mui/icons-material';
+import { 
+  UploadFile as UploadFileIcon, 
+  Send as SendIcon, 
+  Delete as DeleteIcon 
+} from '@mui/icons-material';
 import { toast, ToastContainer } from 'react-toastify';
 
 import {
@@ -95,25 +98,14 @@ function PermisosForm() {
     }));
   };
 
-<<<<<<< HEAD
-  // === LÓGICA INTELIGENTE DE EVIDENCIA CORREGIDA ===
-  const requiereEvidencia = form.subtipo
-  ? (
-      form.subtipo.toLowerCase().includes('requiere') ||
-      form.subtipo.toLowerCase().includes('con')
-    ) &&
-    !form.subtipo.toLowerCase().includes('sin')
-  : false;
-=======
-// === LÓGICA INTELIGENTE DE EVIDENCIA ===
+  // === LÓGICA INTELIGENTE DE EVIDENCIA ===
   const requiereEvidencia = form.subtipo ?
   (
-    // Da TRUE si contiene "requiere" o "con_justificaci" (ahora en minúsculas)
+    // Da TRUE si contiene "requiere" o "con_" 
     (form.subtipo.includes('requiere') || form.subtipo.includes('con_')) && 
     // Da FALSE si contiene "sin_" (Evita el falso positivo de "sin evidencia")
     !form.subtipo.includes('sin_')
   ) : false;
->>>>>>> main
 
   const getPermisoData = () => {
     if (!tipoSeleccionado) return {};
@@ -260,27 +252,23 @@ function PermisosForm() {
 
     const extension = file.name.split('.').pop();
 
-    // 🔹 Función para limpiar texto (la mejoras un poco)
     const limpiarTexto = (texto) =>
       texto
         .normalize('NFD')
-        .replace(/[\u0300-\u036f]/g, '') // elimina tildes
+        .replace(/[\u0300-\u036f]/g, '') 
         .replace(/ñ/gi, 'n')
-        .replace(/[^a-zA-Z0-9]/g, '_')   // 🔥 NUEVO: solo deja letras y números
-        .replace(/_+/g, '_')             // evita múltiples _
-        .replace(/^_|_$/g, '')           // limpia _ al inicio/fin
+        .replace(/[^a-zA-Z0-9]/g, '_')  
+        .replace(/_+/g, '_')            
+        .replace(/^_|_$/g, '')          
         .toLowerCase();
 
-    // 🔹 Nombres limpios
     const nombres = perfil?.nombres ? limpiarTexto(perfil.nombres) : 'nombre';
     const apellidos = perfil?.apellidos ? limpiarTexto(perfil.apellidos) : 'apellido';
 
-    // 🔥 AQUÍ ESTÁ LA CORRECCIÓN CLAVE
     const subtipoLimpio = form.subtipo
       ? limpiarTexto(form.subtipo)
       : limpiarTexto(asuntoDefault || 'documento');
 
-    // 🔹 Manejo de fechas (tu lógica original intacta)
     let fechaRango = form.fecha || 'sin_fecha';
 
     if (tipoSeleccionado?.nombre === 'Falta') {
@@ -303,12 +291,10 @@ function PermisosForm() {
 
     const timestamp = Date.now();
 
-    // 🔹 Nombre final SEGURO
     const nombreArchivo = `${apellidos}_${nombres}_${fechaRango}_${
       tipoSeleccionado?.nombre === 'Falta' ? timestamp + '_' : ''
     }${subtipoLimpio}.${extension}`;
 
-    // 🔹 Crear archivo renombrado
     const archivoRenombrado = new File([file], nombreArchivo, {
       type: file.type
     });

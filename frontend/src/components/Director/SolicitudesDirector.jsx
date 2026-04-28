@@ -142,7 +142,23 @@ function SolicitudesDirector() {
   // VISTA DE DETALLE
   // ==========================================
   if (correoSeleccionado) {
-    const url = adjuntoSeleccionado ? obtenerUrlDocumento(adjuntoSeleccionado.filename) : '';
+    let url = '';
+    if (adjuntoSeleccionado) {
+      // 1. Detectamos si el adjunto es la Evidencia o el PDF generado por el sistema
+      // (Asumimos que el PDF del sistema termina en _Permiso.pdf como en tu captura)
+      const esEvidencia = !adjuntoSeleccionado.filename.endsWith('_Permiso.pdf');
+
+      // 2. Si es la evidencia, ignoramos el nombre corrupto del correo y extraemos 
+      // el nombre perfecto directamente del objeto de la base de datos.
+      // ⚠️ OJO: Cambia ".documento" si en tu backend la columna se llama ".archivo" o ".evidencia"
+      const nombreSeguro = (esEvidencia && permisoSeleccionado?.documento) 
+        ? permisoSeleccionado.documento 
+        : adjuntoSeleccionado.filename;
+
+      // 3. Generamos la URL con el nombre correcto
+      url = obtenerUrlDocumento(nombreSeguro);
+    }
+
     const esPDF = url.toLowerCase().endsWith('.pdf');
 
     return (
@@ -299,15 +315,141 @@ function SolicitudesDirector() {
               </Paper>
             </Grid>
 
-            {/* Columna Derecha: Previsualización del correo */}
+            {/* COLUMNA DERECHA: VISTA PREVIA PROFESIONAL */}
             <Grid item xs={12} md={7} lg={8}>
-              <Paper elevation={3} sx={{ borderRadius: 2, overflow: 'hidden', height: { xs: '600px', md: '100%' }, minHeight: '600px', border: '1px solid var(--color-border)' }}>
-                <iframe
-                  srcDoc={correoSeleccionado.html || correoSeleccionado.text || '<p>(sin contenido)</p>'}
-                  title="Correo Detallado"
-                  style={{ width: '100%', height: '100%', border: 'none', backgroundColor: 'white' }}
-                />
-              </Paper>
+              <Box
+                sx={{
+                  width: '100%',
+                  display: 'flex',
+                  justifyContent: 'center',
+                  backgroundColor: '#0f172a', // fondo tipo dashboard (como tu imagen)
+                  py: 4,
+                  borderRadius: 2,
+                  overflowY: 'auto',
+                  maxHeight: '100vh',
+                  position: { md: 'sticky' },
+                  top: { md: 24 }
+                }}
+              >
+                {/* HOJA A4 */}
+                <Paper
+                  elevation={6}
+                  sx={{
+                    width: '210mm',
+                    minHeight: '297mm',
+                    backgroundColor: '#ffffff',
+                    padding: '20mm',
+                    boxSizing: 'border-box',
+                    borderRadius: 2,
+                    position: 'relative',
+                    fontFamily: '"Times New Roman", Times, serif',
+                    color: '#1e2a3a'
+                  }}
+                >
+                  {/* CONTENIDO DEL DOCUMENTO */}
+                  <Box
+                    sx={{
+                      '& img': {
+                        display: 'block',
+                        margin: '0 auto',
+                        maxWidth: '120px',
+                        mb: 2
+                      },
+                      '& .titulo-institucion': {
+                        textAlign: 'center',
+                        fontWeight: 700,
+                        textTransform: 'uppercase',
+                        fontSize: '14px',
+                        lineHeight: 1.4,
+                        mb: 3
+                      },
+                      '& .fecha': {
+                        textAlign: 'right',
+                        mb: 3,
+                        fontSize: '13px'
+                      },
+                      '& .destinatario': {
+                        textAlign: 'left',
+                        mb: 3,
+                        fontSize: '13px'
+                      },
+                      '& .texto': {
+                        textAlign: 'justify',
+                        fontSize: '13.5px',
+                        lineHeight: 1.6,
+                        mb: 2
+                      },
+                      '& .firma': {
+                        marginTop: '40px',
+                        fontSize: '13px'
+                      }
+                    }}
+                  >
+                    {correoSeleccionado?.html ? (
+                      <div
+                         dangerouslySetInnerHTML={{
+                          __html: `
+                            <style>
+                              body {
+                                font-family: "Times New Roman", serif;
+                                color: #1e2a3a;
+                                line-height: 1.6;
+                              }
+
+                              img {
+                                display: block;
+                                margin: 0 auto;
+                                max-width: 120px;
+                              }
+
+                              .titulo-institucion {
+                                text-align: center;
+                                font-weight: bold;
+                                text-transform: uppercase;
+                                font-size: 14px;
+                                margin-bottom: 20px;
+                              }
+
+                              .fecha {
+                                text-align: right;
+                                font-size: 13px;
+                                margin-bottom: 20px;
+                              }
+
+                              .destinatario {
+                                font-size: 13px;
+                                margin-bottom: 20px;
+                              }
+
+                              .texto {
+                                text-align: justify;
+                                font-size: 13.5px;
+                                margin-bottom: 15px;
+                              }
+
+                              .firma {
+                                margin-top: 40px;
+                                font-size: 13px;
+                              }
+
+                              table {
+                                width: 100%;
+                                border-collapse: collapse;
+                              }
+                            </style>
+
+                            ${correoSeleccionado.html}
+                          `
+                        }}
+                      />
+                    ) : (
+                      <div style={{ whiteSpace: 'pre-wrap' }}>
+                        {correoSeleccionado?.text || ''}
+                      </div>
+                    )}
+                  </Box>
+                </Paper>
+              </Box>
             </Grid>
           </Grid>
 

@@ -11,7 +11,8 @@ import {
   Grid,
   FormControlLabel,
   Checkbox,
-  Stack
+  Stack,
+  IconButton
 } from '@mui/material';
 import { IconButton } from '@mui/material';
 import { UploadFile as UploadFileIcon, Send as SendIcon, Delete as DeleteIcon } from '@mui/icons-material';
@@ -94,6 +95,7 @@ function PermisosForm() {
     }));
   };
 
+<<<<<<< HEAD
   // === LÓGICA INTELIGENTE DE EVIDENCIA CORREGIDA ===
   const requiereEvidencia = form.subtipo
   ? (
@@ -102,6 +104,16 @@ function PermisosForm() {
     ) &&
     !form.subtipo.toLowerCase().includes('sin')
   : false;
+=======
+// === LÓGICA INTELIGENTE DE EVIDENCIA ===
+  const requiereEvidencia = form.subtipo ?
+  (
+    // Da TRUE si contiene "requiere" o "con_justificaci" (ahora en minúsculas)
+    (form.subtipo.includes('requiere') || form.subtipo.includes('con_')) && 
+    // Da FALSE si contiene "sin_" (Evita el falso positivo de "sin evidencia")
+    !form.subtipo.includes('sin_')
+  ) : false;
+>>>>>>> main
 
   const getPermisoData = () => {
     if (!tipoSeleccionado) return {};
@@ -247,29 +259,61 @@ function PermisosForm() {
     if (!file) return;
 
     const extension = file.name.split('.').pop();
+
+    // 🔹 Función para limpiar texto (la mejoras un poco)
     const limpiarTexto = (texto) =>
-      texto.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/ñ/gi, 'n')
-        .trim().split(/\s+/).map((p) => p.charAt(0).toUpperCase() + p.slice(1).toLowerCase()).join('_');
+      texto
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '') // elimina tildes
+        .replace(/ñ/gi, 'n')
+        .replace(/[^a-zA-Z0-9]/g, '_')   // 🔥 NUEVO: solo deja letras y números
+        .replace(/_+/g, '_')             // evita múltiples _
+        .replace(/^_|_$/g, '')           // limpia _ al inicio/fin
+        .toLowerCase();
 
-    const nombres = perfil?.nombres ? limpiarTexto(perfil.nombres) : 'Nombre';
-    const apellidos = perfil?.apellidos ? limpiarTexto(perfil.apellidos) : 'Apellido';
-    const asunto = form.subtipo?.replace(/\s+/g, '_').toLowerCase() || asuntoDefault;
+    // 🔹 Nombres limpios
+    const nombres = perfil?.nombres ? limpiarTexto(perfil.nombres) : 'nombre';
+    const apellidos = perfil?.apellidos ? limpiarTexto(perfil.apellidos) : 'apellido';
 
+    // 🔥 AQUÍ ESTÁ LA CORRECCIÓN CLAVE
+    const subtipoLimpio = form.subtipo
+      ? limpiarTexto(form.subtipo)
+      : limpiarTexto(asuntoDefault || 'documento');
+
+    // 🔹 Manejo de fechas (tu lógica original intacta)
     let fechaRango = form.fecha || 'sin_fecha';
+
     if (tipoSeleccionado?.nombre === 'Falta') {
-        const formatoFecha = (fechaStr) => {
-            if (!fechaStr) return 'sin_fecha';
-            const date = new Date(fechaStr + 'T00:00:00');
-            return date.toLocaleDateString('es-EC', { day: '2-digit', month: '2-digit', year: 'numeric' }).replace(/\//g, '-');
-        };
-        const fIni = formatoFecha(form.fecha_inicio);
-        const fFin = formatoFecha(form.fecha_fin);
-        fechaRango = fIni === fFin ? fIni : `${fIni}_a_${fFin}`;
+      const formatoFecha = (fechaStr) => {
+        if (!fechaStr) return 'sin_fecha';
+        const date = new Date(fechaStr + 'T00:00:00');
+        return date
+          .toLocaleDateString('es-EC', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric'
+          })
+          .replace(/\//g, '-');
+      };
+
+      const fIni = formatoFecha(form.fecha_inicio);
+      const fFin = formatoFecha(form.fecha_fin);
+      fechaRango = fIni === fFin ? fIni : `${fIni}_a_${fFin}`;
     }
 
     const timestamp = Date.now();
-    const nombreArchivo = `${apellidos}_${nombres}_${fechaRango}_${tipoSeleccionado?.nombre === 'Falta' ? timestamp + '_' : ''}${asunto}.${extension}`;
-    setArchivo(new File([file], nombreArchivo, { type: file.type }));
+
+    // 🔹 Nombre final SEGURO
+    const nombreArchivo = `${apellidos}_${nombres}_${fechaRango}_${
+      tipoSeleccionado?.nombre === 'Falta' ? timestamp + '_' : ''
+    }${subtipoLimpio}.${extension}`;
+
+    // 🔹 Crear archivo renombrado
+    const archivoRenombrado = new File([file], nombreArchivo, {
+      type: file.type
+    });
+
+    setArchivo(archivoRenombrado);
   };
 
   return (

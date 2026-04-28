@@ -144,19 +144,40 @@ function SolicitudesDirector() {
   // VISTA DE DETALLE
   // ==========================================
   if (correoSeleccionado) {
-    // === LÓGICA INTELIGENTE DE VACACIONES (AQUÍ SE CALCULA PARA EL RENDER) ===
-    const subtipo = permisoSeleccionado?.tipo?.sub_tipo?.toLowerCase() || '';
-    const requiereEvidencia = (subtipo.includes('requiere') || subtipo.includes('con_')) && !subtipo.includes('sin_');
+      // === LÓGICA INTELIGENTE DE VACACIONES (NIVEL DIOS) ===
 
-    let url = '';
-    if (adjuntoSeleccionado) {
-      const esEvidencia = !adjuntoSeleccionado.filename.endsWith('_Permiso.pdf');
-      const nombreSeguro = (esEvidencia && permisoSeleccionado?.documento) 
-        ? permisoSeleccionado.documento 
-        : adjuntoSeleccionado.filename;
-      url = obtenerUrlDocumento(nombreSeguro);
-    }
+      // 1. Convertimos TODO el objeto "tipo" a texto. 
+      // Así evitamos que la palabra se nos escape si viene en otro campo de la BD.
+      const datosTipo = JSON.stringify(permisoSeleccionado?.tipo || {}).toLowerCase() 
+                        + ' ' + 
+                        (permisoSeleccionado?.tipo_permiso || '').toLowerCase();
 
+      // 2. Buscamos cualquier palabra clave relacionada a evidencias o salud
+      const requiereEvidencia = 
+        datosTipo.includes('requiere') || 
+        datosTipo.includes('evidencia') || 
+        datosTipo.includes('medic') || 
+        datosTipo.includes('médic') || 
+        datosTipo.includes('calamidad');
+
+      // === LÓGICA DE DOCUMENTOS ADJUNTOS ===
+      let url = '';
+
+      if (adjuntoSeleccionado) {
+        const nombreArchivo = adjuntoSeleccionado?.filename?.toLowerCase() || '';
+
+        // Se considera evidencia si NO es el PDF generado automáticamente del permiso
+        const esEvidencia = !nombreArchivo.endsWith('_permiso.pdf');
+
+        // Selección segura del nombre del documento
+        const nombreSeguro =
+          (esEvidencia && permisoSeleccionado?.documento)
+            ? permisoSeleccionado.documento
+            : adjuntoSeleccionado.filename;
+
+        url = obtenerUrlDocumento(nombreSeguro);
+      }
+    
     const esPDF = url.toLowerCase().endsWith('.pdf');
 
     return (
@@ -268,16 +289,22 @@ function SolicitudesDirector() {
                       <Checkbox 
                         checked={cargaVacaciones} 
                         onChange={e => setCargaVacaciones(e.target.checked)} 
-                        color="primary"
                         disabled={requiereEvidencia}
+                        sx={{
+                          color: requiereEvidencia ? 'text.disabled' : 'primary.main',
+                          '&.Mui-checked': {
+                            color: 'primary.main',
+                          },
+                        }}
                       />
                     }
                     label="Cargar a vacaciones"
-                    sx={{ color: 'var(--color-text)' }}
+                    sx={{ color: requiereEvidencia ? 'text.disabled' : 'var(--color-text)' }}
                   />
+                  
                   {requiereEvidencia && (
-                    <Typography variant="caption" color="error" sx={{ mt: -1, ml: 3 }}>
-                      * No aplica para permisos que requieren justificación médica/legal.
+                    <Typography variant="caption" sx={{ display: 'block', ml: 4, mt: -1, color: 'var(--color-text-secondary)', fontStyle: 'italic' }}>
+                      * Opción no disponible para permisos que se justifican con evidencia (médica/calamidad).
                     </Typography>
                   )}
                 </Stack>

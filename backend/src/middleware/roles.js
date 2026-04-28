@@ -15,21 +15,13 @@ const verificarRoles = (...rolesPermitidos) => (req, res, next) => {
 };
 
 // Middlewares específicos para roles comunes
-const esAdministrativo = verificarRoles('admin', 'dti', 'tthh', 'director',);
+const esAdministrativo = verificarRoles('admin', 'dti', 'tthh', 'director');
 const esDTICs = verificarRoles('admin', 'dti');
 const esTHHCs = verificarRoles('admin', 'tthh');
 const esDirector = verificarRoles('admin', 'director');
 const esAll= verificarRoles('admin', 'dti', 'tthh', 'director', 'docente');
-module.exports = {
-  verificarRoles,
-  esAdministrativo,
-  esDirector,
-  esAll,
-  esDTICs,
-  esTHHCs
-};
 
-
+// Middleware para que los docentes puedan editar su propio perfil
 const esDTICsOPropietario = (req, res, next) => {
   const idUsuarioLogueado = req.usuario.id; 
   const rolUsuarioLogueado = req.usuario.rol;
@@ -42,10 +34,13 @@ const esDTICsOPropietario = (req, res, next) => {
   return res.status(403).json({ mensaje: 'No tienes permisos para editar a este usuario' });
 };
 
+// === UN SOLO MODULE.EXPORTS CON ABSOLUTAMENTE TODAS LAS FUNCIONES ===
 module.exports = {
-  esDTICs,
+  verificarRoles,
+  esAdministrativo, 
+  esDirector,
   esAll,
-  esDTICsOPropietario, 
-  esDirector,          
-  esTHHCs              
+  esDTICs,
+  esTHHCs,
+  esDTICsOPropietario 
 };

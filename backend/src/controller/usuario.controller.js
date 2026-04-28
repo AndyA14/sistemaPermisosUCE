@@ -93,7 +93,7 @@ const crearUsuario = async (req, res) => {
 const actualizarUsuario = async (req, res) => {
   try {
     const id = parseInt(req.params.id);
-    const repo = getRepository();
+    const repo = getRepository(); // Ajusta según tu framework (TypeORM)
     const usuario = await repo.findOneBy({ id });
     if (!usuario) return res.status(404).json({ mensaje: 'Usuario no encontrado' });
 
@@ -101,6 +101,15 @@ const actualizarUsuario = async (req, res) => {
       username, contrasena, ci, nombres, apellidos,
       correo, telefono, direccion, rol, estado
     } = req.body;
+
+    // --- NUEVA VALIDACIÓN: Evitar nombres de usuario duplicados ---
+    if (username && username !== usuario.username) {
+      const existe = await repo.findOneBy({ username });
+      if (existe) {
+        return res.status(400).json({ mensaje: 'Este nombre de usuario ya está en uso por otro docente.' });
+      }
+    }
+    // --------------------------------------------------------------
 
     if (contrasena) usuario.contrasena = await bcrypt.hash(contrasena, 10);
 
@@ -117,10 +126,10 @@ const actualizarUsuario = async (req, res) => {
     });
 
     await repo.save(usuario);
-    res.json({ mensaje: 'Usuario actualizado' });
+    return res.json({ mensaje: 'Usuario actualizado correctamente', usuario });
+
   } catch (error) {
-    console.error('Error actualizarUsuario:', error);
-    res.status(500).json({ mensaje: 'Error al actualizar usuario' });
+    return res.status(500).json({ mensaje: 'Error interno del servidor', error });
   }
 };
 

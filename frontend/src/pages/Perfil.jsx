@@ -31,7 +31,7 @@ import {
   VisibilityOff
 } from '@mui/icons-material';
 
-import { obtenerPerfil, cambiarContrasena } from '../services/api';
+import { obtenerPerfil, cambiarContrasena, actualizarUsuario } from '../services/api';
 import LoadingModal from '../components/LoadingModal';
 
 const ROLES_LABELS = {
@@ -60,6 +60,12 @@ function Perfil() {
   const [showOldPass, setShowOldPass] = useState(false);
   const [showNewPass, setShowNewPass] = useState(false);
   const [showConfirmPass, setShowConfirmPass] = useState(false);
+
+  // --- Estados para editar nombre de usuario ---
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editUsername, setEditUsername] = useState('');
+  const [editError, setEditError] = useState('');
+  const [updatingProfile, setUpdatingProfile] = useState(false);
 
   useEffect(() => {
     obtenerPerfil()
@@ -99,6 +105,33 @@ function Perfil() {
       setPassError(err.message);
     } finally {
       setChangingPass(false);
+    }
+  };
+
+  const handleUpdateUsername = async (e) => {
+    e.preventDefault();
+    setEditError('');
+    if (!editUsername.trim()) return;
+    
+    // Si no cambió nada, solo cerramos
+    if (editUsername === usuario.username) {
+      setShowEditModal(false);
+      return;
+    }
+
+    try {
+      setUpdatingProfile(true);
+      await actualizarUsuario(usuario.id, { username: editUsername });
+      
+      // Como cambió su credencial, cerramos sesión para que el sistema le dé un Token nuevo
+      alert('Nombre de usuario actualizado con éxito. Por seguridad, debe iniciar sesión nuevamente.');
+      localStorage.removeItem('token'); // Ajusta esto si guardas tu token con otro nombre
+      window.location.href = '/login'; 
+      
+    } catch (err) {
+      setEditError(err.message || 'Error al actualizar el perfil');
+    } finally {
+      setUpdatingProfile(false);
     }
   };
 
@@ -268,7 +301,13 @@ function Perfil() {
                   <Typography variant="h6" fontWeight={600} color="var(--color-text)">
                     Información Personal
                   </Typography>
-                  <IconButton sx={{ color: 'var(--color-text)', '&:hover': { bgcolor: 'var(--btn-crear-bg)', color: 'white' } }}>
+                  <IconButton 
+                    onClick={() => {
+                      setEditUsername(usuario.username); // Precargar el usuario actual
+                      setShowEditModal(true);
+                    }} 
+                    sx={{ color: 'var(--color-text)', '&:hover': { bgcolor: 'var(--btn-crear-bg)', color: 'white' } }}
+                  >
                     <EditOutlined />
                   </IconButton>
                 </Box>
@@ -404,6 +443,47 @@ function Perfil() {
             }}
           >
             Guardar Cambios
+          </Button>
+        </DialogActions>
+      </Dialog>
+      {/* Dialog para Cambiar Nombre de Usuario */}
+      <Dialog open={showEditModal} onClose={() => setShowEditModal(false)} PaperProps={{ sx: { borderRadius: 4, width: '100%', maxWidth: 400, bgcolor: 'var(--color-bg)' } }}>
+        <DialogTitle sx={{ borderBottom: '1px solid var(--color-border)', color: 'var(--color-text)', fontWeight: 600 }}>
+          Cambiar Nombre de Usuario
+        </DialogTitle>
+        <DialogContent sx={{ mt: 2 }}>
+          {editError && <Alert severity="error" sx={{ mb: 2 }}>{editError}</Alert>}
+          <Typography variant="body2" sx={{ color: 'var(--color-text-secondary)', mb: 3 }}>
+            Este es el nombre con el que inicias sesión en el sistema. Puedes cambiarlo por tu identificador institucional habitual.
+          </Typography>
+
+          <Box component="form" id="username-form" onSubmit={handleUpdateUsername} sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            <TextField
+              label="Nombre de Usuario"
+              fullWidth
+              required
+              value={editUsername}
+              onChange={(e) => setEditUsername(e.target.value.toLowerCase())} // Forzar minúsculas
+              disabled={updatingProfile}
+              InputProps={{ sx: { borderRadius: 2 } }}
+            />
+          </Box>
+        </DialogContent>
+        <DialogActions sx={{ p: 3, pt: 0 }}>
+          <Button onClick={() => setShowEditModal(false)} sx={{ color: 'var(--color-text)' }} disabled={updatingProfile}>
+            Cancelar
+          </Button>
+          <Button 
+            type="submit" 
+            form="username-form" 
+            variant="contained" 
+            disabled={updatingProfile}
+            sx={{ 
+              borderRadius: 2, 
+              background: theme.palette.mode === 'dark' ? 'linear-gradient(135deg, #0284c7, #0ea5e9)' : 'linear-gradient(135deg, #0ea5e9, #2980b9)'
+            }}
+          >
+            {updatingProfile ? 'Guardando...' : 'Guardar y Reiniciar'}
           </Button>
         </DialogActions>
       </Dialog>

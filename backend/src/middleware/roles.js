@@ -28,3 +28,24 @@ module.exports = {
   esDTICs,
   esTHHCs
 };
+
+
+const esDTICsOPropietario = (req, res, next) => {
+  const idUsuarioLogueado = req.usuario.id; 
+  const rolUsuarioLogueado = req.usuario.rol;
+  const idParametro = parseInt(req.params.id);
+
+  if (rolUsuarioLogueado === 'dti' || idUsuarioLogueado === idParametro) {
+    return next(); 
+  }
+
+  return res.status(403).json({ mensaje: 'No tienes permisos para editar a este usuario' });
+};
+
+module.exports = {
+  esDTICs,
+  esAll,
+  esDTICsOPropietario, 
+  esDirector,          
+  esTHHCs              
+};

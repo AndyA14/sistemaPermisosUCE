@@ -1,4 +1,4 @@
-// src/services/mail.service.js
+// src/service/mail.service.js
 const sgMail = require('@sendgrid/mail');
 const fs = require('fs');
 const path = require('path');

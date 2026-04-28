@@ -12,7 +12,8 @@ const {
 } = require('../controller/usuario.controller');
 
 const { verificarToken } = require('../middleware/auth');
-const { esDTICs, esAll } = require('../middleware/roles');
+// 1. IMPORTAMOS EL NUEVO PERMISO AQUÍ:
+const { esDTICs, esAll, esDTICsOPropietario } = require('../middleware/roles');
 
 // PERFIL autenticado
 router.get('/usuario/perfil', verificarToken, obtenerPerfil);
@@ -21,7 +22,9 @@ router.get('/usuario/perfil', verificarToken, obtenerPerfil);
 router.get('/usuario', verificarToken, esDTICs, listarUsuarios);
 router.get('/usuario/:id', verificarToken, esDTICs, obtenerUsuario);
 router.post('/usuario', verificarToken, esDTICs, crearUsuario);
-router.put('/usuario/:id', verificarToken, esDTICs, actualizarUsuario);
+
+// 2. CAMBIAMOS EL PERMISO SOLO EN ESTA RUTA:
+router.put('/usuario/:id', verificarToken, esDTICsOPropietario, actualizarUsuario);
 
 // Activar/Desactivar
 router.patch('/usuario/:id/desactivar', verificarToken, esDTICs, desactivarUsuario);

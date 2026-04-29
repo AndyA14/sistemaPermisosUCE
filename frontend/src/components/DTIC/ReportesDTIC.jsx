@@ -15,6 +15,7 @@ import {
   TableRow,
   Dialog,
   DialogContent,
+  DialogTitle,
   Autocomplete,
   Chip,
   Tooltip,
@@ -28,7 +29,8 @@ import {
   HourglassEmpty,
   CancelOutlined,
   Group as GroupIcon,
-  PersonOutline as PersonActiveIcon
+  PersonOutline as PersonActiveIcon,
+  Close as CloseIcon
 } from '@mui/icons-material';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -475,18 +477,52 @@ function ReportesDTIC() {
           </TableContainer>
         </Paper>
 
-        {/* Modal para Detalles de Permiso */}
+        {/* MODAL MEJORADO TIPO HOJA A4 */}
         <Dialog 
           open={!!permisoDetalle} 
           onClose={cerrarDetalle}
           maxWidth="md"
           fullWidth
           PaperProps={{
-            sx: { borderRadius: 4, backgroundColor: 'var(--color-bg)', color: 'var(--color-text)' }
+            sx: { 
+              borderRadius: 2, 
+              backgroundColor: '#e2e8f0', // Fondo gris oscuro para resaltar la hoja blanca
+              overflow: 'hidden'
+            }
           }}
         >
-          <DialogContent sx={{ p: 0 }}>
-            {permisoDetalle && <CartaSeguimientoPermiso permiso={permisoDetalle} />}
+          <DialogTitle sx={{ m: 0, p: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#334155', color: '#f8fafc' }}>
+            <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
+              Vista Previa del Documento
+            </Typography>
+            <IconButton
+              aria-label="close"
+              onClick={cerrarDetalle}
+              sx={{ color: '#94a3b8', '&:hover': { color: '#f8fafc' } }}
+            >
+              <CloseIcon />
+            </IconButton>
+          </DialogTitle>
+
+          <DialogContent sx={{ p: { xs: 2, sm: 4 }, backgroundColor: '#cbd5e1', display: 'flex', justifyContent: 'center' }}>
+            <Paper
+              elevation={6}
+              sx={{
+                width: '100%',
+                maxWidth: '210mm',      // Ancho estándar A4
+                minHeight: '297mm',     // Alto estándar A4
+                backgroundColor: '#ffffff', // Hoja blanca pura
+                padding: '20mm',        // Márgenes del documento
+                boxSizing: 'border-box',
+                fontFamily: '"Times New Roman", Times, serif', // Tipografía formal
+                color: '#1e2a3a',       // Texto oscuro formal
+                '& *': {                // Forzar la fuente
+                  fontFamily: '"Times New Roman", Times, serif !important',
+                }
+              }}
+            >
+              {permisoDetalle && <CartaSeguimientoPermiso permiso={permisoDetalle} />}
+            </Paper>
           </DialogContent>
         </Dialog>
 

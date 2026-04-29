@@ -1,17 +1,14 @@
 import React from 'react';
 import CartaLayout from './CartaLayout';
 
-/**
- * Carta general para justificar un motivo clasificado como "Otros".
- * Redacción formal y adaptable según lo que escriba el usuario.
- */
 const CartaOtros = ({ perfil, form, archivo }) => {
-  if (!perfil || !form) return null;
+  if (!perfil) return null;
 
-  const descripcion = form.descripcion?.trim();
+  const fechaMostrada = form?.fecha || '________';
+  const descripcion = form?.descripcion?.trim();
 
   return (
-    <CartaLayout fecha={form.fecha}>
+    <CartaLayout fecha={fechaMostrada}>
       <div className="saludo">De mi consideración:</div>
 
       <div className="contenido-justificado">
@@ -24,14 +21,14 @@ const CartaOtros = ({ perfil, form, archivo }) => {
             <em>{descripcion.replace(/\.$/, '')}.</em>
           </p>
         ) : (
-          <p>
-            Presento esta comunicación para dejar constancia de una situación particular, correspondiente a la fecha {form.fecha}.
+          <p style={{ color: '#94a3b8' }}>
+            [Aquí aparecerá la descripción del motivo que usted redacte...]
           </p>
         )}
 
         {archivo && (
-          <p>
-            Se adjunta un documento como respaldo adicional para su consideración.
+          <p style={{ color: '#27ae60', fontWeight: 'bold' }}>
+            ✓ Se adjunta un documento como respaldo adicional para su consideración.
           </p>
         )}
 
@@ -45,18 +42,15 @@ const CartaOtros = ({ perfil, form, archivo }) => {
   );
 };
 
-/**
- * Firma del solicitante con datos completos.
- */
 const Firma = ({ perfil }) => (
   <div className="firma-derecha">
     <p>Atentamente,</p>
-    <p><strong>{perfil.nombres} {perfil.apellidos}</strong></p>
-    <p>{perfil.cargo || 'Usuario'}</p>
+    <p style={{ marginTop: '2.5rem' }}><strong>{perfil.nombres} {perfil.apellidos}</strong></p>
+    <p>{perfil.rol ? (perfil.rol.charAt(0).toUpperCase() + perfil.rol.slice(1)) : 'Usuario'}</p>
     <p>C.I.: {perfil.ci}</p>
     <p>Correo: {perfil.correo}</p>
     <p>Teléfono: {perfil.telefono}</p>
-    <p>Dirección: {perfil.direccion}</p>
+    <p>Dirección: {perfil.direccion || 'Quito'}</p>
   </div>
 );
 

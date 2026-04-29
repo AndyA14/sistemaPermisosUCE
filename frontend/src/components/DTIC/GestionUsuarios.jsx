@@ -129,11 +129,12 @@ function GestionUsuarios() {
     reset,
     setValue,
     watch,
+    setError, // <-- Importamos setError para inyectar errores manuales
     formState: { errors }
   } = useForm({
     resolver: zodResolver(usuarioSchema),
     defaultValues: defaultValuesForm,
-    mode: 'onChange' // Valida mientras el usuario escribe
+    mode: 'onChange'
   });
 
   // Observamos los nombres y apellidos para generar el username en tiempo real
@@ -172,8 +173,33 @@ function GestionUsuarios() {
     }
   };
 
-  // onSubmit ahora recibe 'data' ya validada y perfecta desde Zod
   const onSubmitForm = async (data) => {
+    // === VALIDACIÓN DE DUPLICADOS (Cédula, Correo, Teléfono) ===
+    const ciDuplicada = usuarios.find(u => u.ci === data.ci && u.id !== usuarioEditarId);
+    const correoDuplicado = usuarios.find(u => u.correo.toLowerCase() === data.correo.toLowerCase() && u.id !== usuarioEditarId);
+    const telefonoDuplicado = usuarios.find(u => u.telefono === data.telefono && u.id !== usuarioEditarId);
+
+    let tieneErrores = false;
+
+    if (ciDuplicada) {
+      setError('ci', { type: 'manual', message: '❌ Esta cédula ya está registrada en el sistema.' });
+      tieneErrores = true;
+    }
+    if (correoDuplicado) {
+      setError('correo', { type: 'manual', message: '❌ Este correo ya pertenece a otro usuario.' });
+      tieneErrores = true;
+    }
+    if (telefonoDuplicado) {
+      setError('telefono', { type: 'manual', message: '❌ Este teléfono ya está registrado por otro usuario.' });
+      tieneErrores = true;
+    }
+
+    if (tieneErrores) {
+      toast.warning('Por favor, corrija los datos duplicados antes de guardar.');
+      return; // Detiene el envío al backend
+    }
+
+    // === FLUJO NORMAL SI TODO ESTÁ CORRECTO ===
     setCargando(true);
     try {
       if (modoEditar) {
@@ -196,7 +222,6 @@ function GestionUsuarios() {
   const handleEditar = (usuario) => {
     setModoEditar(true);
     setUsuarioEditarId(usuario.id);
-    // Llenamos el formulario con los datos usando reset() de RHF
     reset({
       nombres: usuario.nombres,
       apellidos: usuario.apellidos,
@@ -231,7 +256,7 @@ function GestionUsuarios() {
   const handleResetForm = () => {
     setModoEditar(false);
     setUsuarioEditarId(null);
-    reset(defaultValuesForm); // Limpia todos los errores y valores
+    reset(defaultValuesForm); 
   };
 
   const usuariosFiltrados = usuarios.filter((u) =>
@@ -380,9 +405,10 @@ function GestionUsuarios() {
                         label="Username (Generado)"
                         readOnly
                         fullWidth
+                        error={!!errors.username}
+                        helperText={errors.username?.message || "Generado automáticamente basado en nombres y apellidos"}
                         sx={{ backgroundColor: 'var(--color-bg-secondary)', borderRadius: 1 }}
                         InputProps={{ startAdornment: <InputAdornment position="start"><PersonIcon /></InputAdornment>, readOnly: true }}
-                        helperText="Generado automáticamente basado en nombres y apellidos"
                       />
                     )}
                   />

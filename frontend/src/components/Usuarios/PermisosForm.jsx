@@ -101,9 +101,7 @@ function PermisosForm() {
   // === LÓGICA INTELIGENTE DE EVIDENCIA ===
   const requiereEvidencia = form.subtipo ?
   (
-    // Da TRUE si contiene "requiere" o "con_" 
     (form.subtipo.includes('requiere') || form.subtipo.includes('con_')) && 
-    // Da FALSE si contiene "sin_" (Evita el falso positivo de "sin evidencia")
     !form.subtipo.includes('sin_')
   ) : false;
 
@@ -140,7 +138,7 @@ function PermisosForm() {
       permisoData.hora_fin = form.no_salida ? form.hora_fin || '00:00:00' : '00:00:00';
     }
 
-    if (tipoSeleccionado.nombre === 'Otros') {
+    if (tipoSeleccionado.nombre.includes('Otro')) {
       permisoData.fecha_inicio = form.fecha || null;
       permisoData.fecha_fin = form.fecha || null;
       permisoData.subtipo = form.subtipo || '';
@@ -158,8 +156,8 @@ function PermisosForm() {
       cartaComponente = <CartaFalta perfil={perfil} form={form} tipoSeleccionado={tipoSeleccionado} />;
     } else if (tipoSeleccionado?.nombre === 'Sin Timbrar') {
       cartaComponente = <CartaSinTimbrar perfil={perfil} form={form} tipoSeleccionado={tipoSeleccionado} />;
-    } else if (tipoSeleccionado?.nombre === 'Otros') {
-      cartaComponente = <CartaOtros perfil={perfil} form={form} tipoSeleccionado={tipoSeleccionado} />;
+    } else if (tipoSeleccionado?.nombre.includes('Otro')) {
+      cartaComponente = <CartaOtros perfil={perfil} form={form} archivo={archivo} />;
     }
 
     if (!cartaComponente) return '';
@@ -202,7 +200,6 @@ function PermisosForm() {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // 🚨 VALIDACIÓN: Impide enviar si requiere archivo y no lo ha subido
     if (requiereEvidencia && !archivo) {
       toast.warn('Por favor, adjunta el documento de evidencia requerido para este permiso.', { position: "top-center" });
       return;
@@ -399,14 +396,14 @@ function PermisosForm() {
                 )}
 
                 {/* === OTROS === */}
-                {tipoSeleccionado?.nombre === 'Otros' && (
+                {tipoSeleccionado?.nombre.includes('Otro') && (
                   <>
                     <TextField type="date" label="Fecha" name="fecha" value={form.fecha || ''} onChange={handleChange} required fullWidth InputLabelProps={{ shrink: true }} />
                     <TextField label="Descripción (opcional)" name="descripcion" value={form.descripcion || ''} onChange={handleChange} multiline rows={3} fullWidth />
                   </>
                 )}
 
-                {/* === BOTÓN SUBIR DOCUMENTO (SOLO SI REQUIERE EVIDENCIA) === */}
+                {/* === BOTÓN SUBIR DOCUMENTO === */}
                 {requiereEvidencia && !archivo && (
                   <Button
                     variant="outlined"
@@ -427,7 +424,7 @@ function PermisosForm() {
                   </Button>
                 )}
 
-                {/* === CAJA DE SUBIDA DE EVIDENCIA (ÚNICA Y DINÁMICA PARA TODOS) === */}
+                {/* === CAJA DE SUBIDA DE EVIDENCIA === */}
                 {archivo && (
                   <Box sx={{
                     display: 'flex',
@@ -503,7 +500,7 @@ function PermisosForm() {
                 {tipoSeleccionado?.nombre === 'Atraso' && <CartaAtraso perfil={perfil} form={form} tipoSeleccionado={tipoSeleccionado} />}
                 {tipoSeleccionado?.nombre === 'Falta' && <CartaFalta perfil={perfil} form={form} tipoSeleccionado={tipoSeleccionado} />}
                 {tipoSeleccionado?.nombre === 'Sin Timbrar' && <CartaSinTimbrar perfil={perfil} form={form} tipoSeleccionado={tipoSeleccionado} />}
-                {tipoSeleccionado?.nombre === 'Otros' && <CartaOtros perfil={perfil} form={form} tipoSeleccionado={tipoSeleccionado} />}
+                {tipoSeleccionado?.nombre.includes('Otro') && <CartaOtros perfil={perfil} form={form} archivo={archivo} />}
               </Paper>
             </Box>
           </Grid>

@@ -15,6 +15,7 @@ import {
   TableRow,
   Dialog,
   DialogContent,
+  DialogTitle,
   Autocomplete,
   Chip,
   Tooltip,
@@ -23,7 +24,8 @@ import {
 import {
   Download as DownloadIcon,
   Visibility as VisibilityIcon,
-  DateRange as DateRangeIcon
+  DateRange as DateRangeIcon,
+  Close as CloseIcon
 } from '@mui/icons-material';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -59,7 +61,6 @@ function RegistroSolicitudes() {
     if (filtro.nombre) {
       const nombreLower = filtro.nombre.toLowerCase();
       filtrados = filtrados.filter(p =>
-        // 🚨 PROTECCIÓN AQUÍ 🚨
         `${p?.usuario?.nombres || ''} ${p?.usuario?.apellidos || ''}`.toLowerCase().includes(nombreLower)
       );
     }
@@ -107,7 +108,6 @@ function RegistroSolicitudes() {
     filtrarPermisos();
   }, [filtro, permisosCargados]);
 
-  // Lógica del Autocomplete de Material UI
   useEffect(() => {
     if (nombreUsuario.trim().length < 3) {
       setListaUsuarios([]);
@@ -357,7 +357,6 @@ function RegistroSolicitudes() {
                 ) : (
                   permisos.map(p => (
                     <TableRow key={p.id} hover sx={{ '&:hover': { backgroundColor: 'var(--color-surface-hover, rgba(0,0,0,0.02))' } }}>
-                      {/* 🚨 PROTECCIÓN AQUÍ 🚨 */}
                       <TableCell sx={{ color: 'var(--color-text)' }}>{p?.usuario?.nombres || 'Usuario'} {p?.usuario?.apellidos || 'Desconocido'}</TableCell>
                       <TableCell sx={{ color: 'var(--color-text)' }}>{p?.tipo?.nombre || 'Desconocido'}</TableCell>
                       <TableCell sx={{ color: 'var(--color-text)' }}>{p?.tipo?.sub_tipo || '-'}</TableCell>
@@ -385,17 +384,54 @@ function RegistroSolicitudes() {
           </TableContainer>
         </Paper>
 
+        {/* MODAL MEJORADO TIPO HOJA A4 */}
         <Dialog 
           open={!!permisoDetalle} 
           onClose={cerrarDetalle}
           maxWidth="md"
           fullWidth
           PaperProps={{
-            sx: { borderRadius: 4, backgroundColor: 'var(--color-bg)', color: 'var(--color-text)' }
+            sx: { 
+              borderRadius: 2, 
+              backgroundColor: '#e2e8f0', // Fondo gris oscuro para resaltar la hoja blanca
+              overflow: 'hidden'
+            }
           }}
         >
-          <DialogContent sx={{ p: 0 }}>
-            {permisoDetalle && <CartaSeguimientoPermiso permiso={permisoDetalle} />}
+          {/* Header del Modal */}
+          <DialogTitle sx={{ m: 0, p: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#334155', color: '#f8fafc' }}>
+            <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
+              Vista Previa del Documento
+            </Typography>
+            <IconButton
+              aria-label="close"
+              onClick={cerrarDetalle}
+              sx={{ color: '#94a3b8', '&:hover': { color: '#f8fafc' } }}
+            >
+              <CloseIcon />
+            </IconButton>
+          </DialogTitle>
+
+          {/* Contenido del Modal (Fondo oscuro con Hoja A4 blanca en el centro) */}
+          <DialogContent sx={{ p: { xs: 2, sm: 4 }, backgroundColor: '#cbd5e1', display: 'flex', justifyContent: 'center' }}>
+            <Paper
+              elevation={6}
+              sx={{
+                width: '100%',
+                maxWidth: '210mm',      // Ancho estándar A4
+                minHeight: '297mm',     // Alto estándar A4
+                backgroundColor: '#ffffff', // Hoja blanca pura
+                padding: '20mm',        // Márgenes del documento
+                boxSizing: 'border-box',
+                fontFamily: '"Times New Roman", Times, serif', // Tipografía formal
+                color: '#1e2a3a',       // Texto oscuro formal
+                '& *': {                // Forzar la fuente en todos los elementos hijos
+                  fontFamily: '"Times New Roman", Times, serif !important',
+                }
+              }}
+            >
+              {permisoDetalle && <CartaSeguimientoPermiso permiso={permisoDetalle} />}
+            </Paper>
           </DialogContent>
         </Dialog>
 

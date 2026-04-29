@@ -1,11 +1,14 @@
-// LayoutPrincipal.jsx
 import React, { useState } from 'react';
 import { Outlet } from 'react-router-dom';
 import { getRol } from '../utils/auth';
 import Header from './Header';
 import Sidebar from './Sidebar';
 import Footer from './Footer';
-import '../styles/layouts/LayoutPrincipal.css';
+
+// 📦 Importaciones de Material UI
+import { Box } from '@mui/material';
+
+// ❌ Borramos la importación de LayoutPrincipal.css
 
 function LayoutPrincipal() {
   const rol = getRol();
@@ -16,16 +19,34 @@ function LayoutPrincipal() {
   };
 
   return (
-    <div className="layout-principal">
+    <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
+      {/* Nuestro nuevo Header de MUI */}
       <Header toggleSidebar={toggleSidebar} isSidebarCollapsed={isSidebarCollapsed} />
-      <div className="layout-content">
+      
+      {/* Contenedor principal para Sidebar y el contenido */}
+      <Box sx={{ display: 'flex', flexGrow: 1, overflow: 'hidden' }}>
+        
+        {/* Tu Sidebar original (Aún no lo tocamos para que no se rompa) */}
         <Sidebar rol={rol} isCollapsed={isSidebarCollapsed} />
-        <main className="layout-main">
+        
+        {/* Área principal donde se cargan las vistas (Outlet) */}
+        <Box 
+          component="main" 
+          sx={{ 
+            flexGrow: 1, 
+            p: { xs: 2, md: 4 }, // Padding adaptable (menor en móviles)
+            overflowY: 'auto',
+            backgroundColor: 'background.default', // Automático para claro/oscuro
+            transition: 'background-color 0.3s ease'
+          }}
+        >
           <Outlet />
-        </main>
-      </div>
+        </Box>
+      </Box>
+
+      {/* Tu Footer original */}
       <Footer />
-    </div>
+    </Box>
   );
 }
 

@@ -287,25 +287,65 @@ export const obtenerPermisosFiltrados = async ({ mes, anio, docente_id }) => {
   return await res.json();
 };
 
-export const crearPermiso = async ({ permisoData, archivo, htmlCorreo }) => {
-  const formData = new FormData();
+export const crearPermiso = async (parametros) => {
+  let bodyData;
 
-  Object.entries(permisoData).forEach(([key, value]) => {
-    formData.append(key, value);
-  });
+  // Caso 1: Si el componente React ya nos envía un FormData armado, lo usamos directo.
+  if (parametros instanceof FormData) {
+    bodyData = parametros;
+  } 
+  // Caso 2: Si nos envían un objeto (formato antiguo o desestructurado), lo armamos nosotros.
+  else {
+    bodyData = new FormData();
+    
+    // Si los datos vienen dentro de la propiedad "permisoData"
+    if (parametros.permisoData) {
+      Object.entries(parametros.permisoData).forEach(([key, value]) => {
+        bodyData.append(key, value);
+      });
+    } else {
+      // Si los datos del formulario vienen sueltos directamente en el objeto
+      Object.entries(parametros).forEach(([key, value]) => {
+        if (key !== 'archivo' && key !== 'htmlCorreo' && value !== undefined && value !== null) {
+          bodyData.append(key, value);
+        }
+      });
+    }
 
-  if (archivo) {
-    formData.append('documento', archivo);
+    // Adjuntar el archivo si existe (usamos el nombre 'documento' que espera tu backend)
+    if (parametros.archivo) {
+      // 1. Tomamos el nombre original que viene de Windows/Mac
+      const nombreOriginal = parametros.archivo.name;
+      
+      // 2. Lo pasamos por la "aduana": quitamos tildes y cambiamos caracteres raros por guiones bajos
+      const nombreLimpio = nombreOriginal
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "") // Elimina las tildes
+        .replace(/[^a-zA-Z0-9.]/g, "_")   // Cambia TODO (excepto letras, números y el punto del .pdf) a guiones bajos
+        .toLowerCase();
+      
+      // 3. Re-empaquetamos el archivo con su nuevo nombre purificado
+      const archivoSeguro = new File([parametros.archivo], nombreLimpio, { type: parametros.archivo.type });
+      
+      // 4. Lo subimos al FormData
+      bodyData.append('documento', archivoSeguro);
+    }
+
+    // Adjuntar el HTML del correo si existe
+    if (parametros.htmlCorreo) {
+      bodyData.append('htmlCorreo', parametros.htmlCorreo);
+    }
   }
 
-  formData.append('htmlCorreo', htmlCorreo);
-
+  // 🚀 Disparamos la petición al backend
   const res = await fetch(`${API_URL}/permisos`, {
     method: 'POST',
     headers: {
-      Authorization: headers().Authorization
+      // 🚨 CRÍTICO: Usamos la función headers() pero le QUITAMOS el Content-Type
+      // El navegador pondrá 'multipart/form-data' automáticamente para que el archivo viaje.
+      Authorization: headers().Authorization 
     },
-    body: formData,
+    body: bodyData,
   });
 
   if (!res.ok) throw new Error('Error al crear permiso');

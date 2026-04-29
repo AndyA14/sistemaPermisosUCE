@@ -1,4 +1,41 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
+import {
+  Box,
+  Container,
+  Typography,
+  Paper,
+  Grid,
+  TextField,
+  Button,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Dialog,
+  DialogContent,
+  DialogTitle,
+  Autocomplete,
+  Chip,
+  Tooltip,
+  IconButton
+} from '@mui/material';
+import {
+  Download as DownloadIcon,
+  Visibility as VisibilityIcon,
+  DateRange as DateRangeIcon,
+  CheckCircleOutline,
+  HourglassEmpty,
+  CancelOutlined,
+  Group as GroupIcon,
+  PersonOutline as PersonActiveIcon,
+  Close as CloseIcon
+} from '@mui/icons-material';
+import { toast, ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+
+// Importaciones locales
 import {
   buscarDocentesPorNombre,
   descargarInformeMensual,
@@ -6,11 +43,7 @@ import {
   obtenerResumenGeneral,
   obtenerUltimosPermisos,
 } from '../../services/api';
-import '../../styles/ReportesDTIC.css';
 import CartaSeguimientoPermiso from '../PlantillasCartas/PlantillasVistasC/CartaSeguimientoPermiso';
-import { renderEstado } from '../../utils/renderEstado';
-import { toast, ToastContainer } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
 import LoadingModal from '../../components/LoadingModal';
 
 function ReportesDTIC() {
@@ -38,6 +71,8 @@ function ReportesDTIC() {
   const [permisosCargados, setPermisosCargados] = useState([]);
   const [cargando, setCargando] = useState(false);
   const [permisoDetalle, setPermisoDetalle] = useState(null);
+
+  const toastId = useRef(null);
 
   const abrirDetalle = (permiso) => setPermisoDetalle(permiso);
   const cerrarDetalle = () => setPermisoDetalle(null);
@@ -75,16 +110,22 @@ function ReportesDTIC() {
     const cargarDatosIniciales = async () => {
       setCargando(true);
       try {
-        const resumen = await obtenerResumenGeneral();
+        const [resumen, todosPermisos] = await Promise.all([
+          obtenerResumenGeneral(),
+          obtenerUltimosPermisos()
+        ]);
+        
         setDatosResumen(resumen);
-
-        const todosPermisos = await obtenerUltimosPermisos();
         setPermisosCargados(todosPermisos);
         setPermisos(todosPermisos);
 
-        toast.success('Datos cargados correctamente', { toastId: 'datos-cargados' });
+        if (!toast.isActive(toastId.current)) {
+          toastId.current = toast.success('Datos cargados correctamente');
+        }
       } catch (err) {
-        toast.error('Error al cargar datos del resumen', { toastId: 'error-carga' });
+        if (!toast.isActive(toastId.current)) {
+          toastId.current = toast.error('Error al cargar datos del resumen');
+        }
       } finally {
         setCargando(false);
       }
@@ -96,6 +137,7 @@ function ReportesDTIC() {
     filtrarPermisos();
   }, [filtro, permisosCargados]);
 
+  // Autocomplete Logic
   useEffect(() => {
     if (nombreUsuario.trim().length < 3) {
       setListaUsuarios([]);
@@ -117,22 +159,6 @@ function ReportesDTIC() {
     return () => clearTimeout(handler);
   }, [nombreUsuario]);
 
-  // --- Handlers ---
-  const manejarCambioNombreUsuario = (e) => {
-    const valor = e.target.value;
-    setNombreUsuario(valor);
-    if (valor === '') {
-      setFiltro(prev => ({ ...prev, nombre: '' }));
-    }
-  };
-
-  const manejarSeleccionUsuario = (usuario) => {
-    const nombreCompleto = `${usuario.nombres} ${usuario.apellidos}`;
-    setNombreUsuario(nombreCompleto);
-    setFiltro(prev => ({ ...prev, nombre: nombreCompleto }));
-    setListaUsuarios([]);
-  };
-
   const manejarMesAnio = (e) => {
     const valor = e.target.value;
     if (!valor) {
@@ -143,13 +169,8 @@ function ReportesDTIC() {
     setFiltro(prev => ({ ...prev, mes, anio }));
   };
 
-  const manejarFechaDesde = (e) => {
-    setFiltro(prev => ({ ...prev, desde: e.target.value }));
-  };
-
-  const manejarFechaHasta = (e) => {
-    setFiltro(prev => ({ ...prev, hasta: e.target.value }));
-  };
+  const manejarFechaDesde = (e) => setFiltro(prev => ({ ...prev, desde: e.target.value }));
+  const manejarFechaHasta = (e) => setFiltro(prev => ({ ...prev, hasta: e.target.value }));
 
   // --- Descargar informes ---
   const descargarMensual = async () => {
@@ -170,7 +191,6 @@ function ReportesDTIC() {
       link.download = `informe_${filtro.mes}_${filtro.anio}.zip`;
       link.click();
       URL.revokeObjectURL(url);
-
       toast.success('Informe mensual descargado');
     } catch (err) {
       toast.error('Error al descargar informe mensual');
@@ -195,149 +215,319 @@ function ReportesDTIC() {
       link.download = `informe_filtrado.zip`;
       link.click();
       URL.revokeObjectURL(url);
-
       toast.success('Informe por rango descargado');
     } catch (err) {
       toast.error('Error al descargar informe por rango');
     }
   };
 
-  // --- Render ---
+  // Helper de renderizado de estados
+  const renderEstadoChip = (estado) => {
+    const estadoNorm = estado?.toLowerCase().trim() || '';
+    if (estadoNorm.includes('aprobado') || estadoNorm.includes('autorizado')) {
+      return <Chip label={estado} color="success" size="small" sx={{ fontWeight: 'bold' }} />;
+    }
+    if (estadoNorm.includes('rechazado') || estadoNorm.includes('denegado')) {
+      return <Chip label={estado} color="error" size="small" sx={{ fontWeight: 'bold' }} />;
+    }
+    if (estadoNorm.includes('pendiente')) {
+      return <Chip label={estado} color="warning" size="small" sx={{ fontWeight: 'bold', color: 'white' }} />;
+    }
+    if (estadoNorm.includes('revision')) {
+      return <Chip label={estado} color="info" size="small" sx={{ fontWeight: 'bold' }} />;
+    }
+    return <Chip label={estado || 'Desconocido'} size="small" sx={{ fontWeight: 'bold', bgcolor: 'grey.500', color: 'white' }} />;
+  };
+
+  // Helper para crear KpiCards
+  const KpiCard = ({ title, value, icon, colorParams }) => (
+    <Paper 
+      elevation={3} 
+      sx={{ 
+        p: 3, 
+        borderRadius: 3, 
+        display: 'flex', 
+        alignItems: 'center', 
+        gap: 2, 
+        background: colorParams.bg,
+        color: colorParams.text,
+        transition: 'transform 0.2s',
+        '&:hover': { transform: 'translateY(-5px)' }
+      }}
+    >
+      <Box sx={{ p: 1.5, borderRadius: '50%', backgroundColor: 'rgba(255,255,255,0.2)', display: 'flex' }}>
+        {icon}
+      </Box>
+      <Box>
+        <Typography variant="body2" sx={{ opacity: 0.9, fontWeight: 500, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+          {title}
+        </Typography>
+        <Typography variant="h4" sx={{ fontWeight: 'bold' }}>
+          {value}
+        </Typography>
+      </Box>
+    </Paper>
+  );
+
   return (
-    <div className="dashboard-container">
+    <Box sx={{ minHeight: '100vh', py: 4, backgroundColor: 'var(--color-bg)' }}>
+      <ToastContainer position="top-right" autoClose={3500} theme="colored" />
       {cargando && <LoadingModal visible={true} />}
-      {permisoDetalle && (
-        <div className="modal-fondo" onClick={cerrarDetalle}>
-          <div className="modal-contenido" onClick={(e) => e.stopPropagation()}>
-            <CartaSeguimientoPermiso permiso={permisoDetalle} />
-          </div>
-        </div>
-      )}
 
-      <h2>Dashboard DTIC</h2>
+      <Container maxWidth="xl">
+        <Typography variant="h4" component="h2" gutterBottom sx={{ fontWeight: 'bold', color: 'var(--color-text)', mb: 4 }}>
+          Dashboard DTIC
+        </Typography>
 
-      <div className="dashboard-grid">
-        <div className="dashboard-card bg-pendientes">
-          <span className="dashboard-label">Permisos Pendientes</span>
-          <span className="dashboard-value">{datosResumen.permisosPendientes}</span>
-        </div>
-        <div className="dashboard-card bg-autorizados">
-          <span className="dashboard-label">Permisos Autorizados</span>
-          <span className="dashboard-value">{datosResumen.permisosAutorizados}</span>
-        </div>
-        <div className="dashboard-card bg-denegados">
-          <span className="dashboard-label">Permisos Denegados</span>
-          <span className="dashboard-value">{datosResumen.permisosDenegados}</span>
-        </div>
-        <div className="dashboard-card">
-          <span className="dashboard-label">Usuarios Activos</span>
-          <span className="dashboard-value">{datosResumen.usuariosActivos}</span>
-        </div>
-        <div className="dashboard-card">
-          <span className="dashboard-label">Total Usuarios</span>
-          <span className="dashboard-value">{datosResumen.totalUsuarios}</span>
-        </div>
-      </div>
+        {/* Sección de KPIs */}
+        <Grid container spacing={3} sx={{ mb: 5 }}>
+          <Grid item xs={12} sm={6} md={4} lg={2.4}>
+            <KpiCard 
+              title="Pendientes" 
+              value={datosResumen.permisosPendientes} 
+              icon={<HourglassEmpty fontSize="large" />} 
+              colorParams={{ bg: 'linear-gradient(135deg, #f39c12, #e67e22)', text: 'white' }} 
+            />
+          </Grid>
+          <Grid item xs={12} sm={6} md={4} lg={2.4}>
+            <KpiCard 
+              title="Autorizados" 
+              value={datosResumen.permisosAutorizados} 
+              icon={<CheckCircleOutline fontSize="large" />} 
+              colorParams={{ bg: 'linear-gradient(135deg, #2ecc71, #27ae60)', text: 'white' }} 
+            />
+          </Grid>
+          <Grid item xs={12} sm={6} md={4} lg={2.4}>
+            <KpiCard 
+              title="Denegados" 
+              value={datosResumen.permisosDenegados} 
+              icon={<CancelOutlined fontSize="large" />} 
+              colorParams={{ bg: 'linear-gradient(135deg, #e74c3c, #c0392b)', text: 'white' }} 
+            />
+          </Grid>
+          <Grid item xs={12} sm={6} md={6} lg={2.4}>
+            <KpiCard 
+              title="Usr. Activos" 
+              value={datosResumen.usuariosActivos} 
+              icon={<PersonActiveIcon fontSize="large" />} 
+              colorParams={{ bg: 'var(--card-bg)', text: 'var(--color-text)' }} 
+            />
+          </Grid>
+          <Grid item xs={12} sm={6} md={6} lg={2.4}>
+            <KpiCard 
+              title="Total Usr." 
+              value={datosResumen.totalUsuarios} 
+              icon={<GroupIcon fontSize="large" />} 
+              colorParams={{ bg: 'var(--card-bg)', text: 'var(--color-text)' }} 
+            />
+          </Grid>
+        </Grid>
 
-      <div className="dashboard-filtros">
-        <h3>Filtros y generación de informes</h3>
+        {/* Sección de Filtros */}
+        <Paper elevation={3} sx={{ p: 4, mb: 4, borderRadius: 3, backgroundColor: 'var(--card-bg)' }}>
+          <Typography variant="h6" gutterBottom sx={{ fontWeight: 600, color: 'var(--color-text)', mb: 3 }}>
+            Filtros y generación de informes
+          </Typography>
 
-        <div className="autocomplete-container">
-          <input
-            type="text"
-            placeholder="Buscar usuario por nombre"
-            value={nombreUsuario}
-            onChange={manejarCambioNombreUsuario}
-            autoComplete="off"
-          />
-          {listaUsuarios.length > 0 && (
-            <ul className="autocomplete-list">
-              {listaUsuarios.map(usuario => (
-                <li
-                  key={usuario.id}
-                  onClick={() => manejarSeleccionUsuario(usuario)}
-                  onMouseDown={e => e.preventDefault()}
-                >
-                  {usuario.nombres} {usuario.apellidos}
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
+          <Grid container spacing={3} alignItems="center">
+            {/* Buscador Autocomplete */}
+            <Grid item xs={12} md={4}>
+              <Autocomplete
+                freeSolo
+                options={listaUsuarios}
+                getOptionLabel={(option) => typeof option === 'string' ? option : `${option.nombres} ${option.apellidos}`}
+                onInputChange={(event, newInputValue) => {
+                  setNombreUsuario(newInputValue);
+                  if (newInputValue === '') setFiltro(prev => ({ ...prev, nombre: '' }));
+                }}
+                onChange={(event, newValue) => {
+                  if (newValue && typeof newValue === 'object') {
+                    const nombreCompleto = `${newValue.nombres} ${newValue.apellidos}`;
+                    setFiltro(prev => ({ ...prev, nombre: nombreCompleto }));
+                  } else {
+                    setFiltro(prev => ({ ...prev, nombre: newValue || '' }));
+                  }
+                }}
+                renderInput={(params) => (
+                  <TextField 
+                    {...params} 
+                    label="Buscar usuario por nombre" 
+                    variant="outlined" 
+                    fullWidth
+                  />
+                )}
+              />
+            </Grid>
 
-        <input
-          type="month"
-          value={filtro.anio && filtro.mes ? `${filtro.anio}-${filtro.mes.padStart(2, '0')}` : ''}
-          onChange={manejarMesAnio}
-        />
+            {/* Selector de Mes/Año */}
+            <Grid item xs={12} sm={6} md={3}>
+              <TextField
+                type="month"
+                label="Filtrar por Mes"
+                value={filtro.anio && filtro.mes ? `${filtro.anio}-${filtro.mes.padStart(2, '0')}` : ''}
+                onChange={manejarMesAnio}
+                fullWidth
+                InputLabelProps={{ shrink: true }}
+              />
+            </Grid>
+            <Grid item xs={12} sm={6} md={5}>
+              <Button 
+                variant="contained" 
+                startIcon={<DownloadIcon />}
+                onClick={descargarMensual} 
+                disabled={!filtro.mes || !filtro.anio}
+                fullWidth
+                sx={{ py: 1.5, background: 'linear-gradient(135deg, var(--btn-crear-bg), #2980b9)', textTransform: 'none' }}
+              >
+                Descargar Informe Mensual
+              </Button>
+            </Grid>
 
-        <input
-          type="date"
-          value={filtro.desde}
-          onChange={manejarFechaDesde}
-        />
-        <input
-          type="date"
-          value={filtro.hasta}
-          onChange={manejarFechaHasta}
-        />
+            {/* Selector de Rango de Fechas */}
+            <Grid item xs={12} sm={6} md={2}>
+              <TextField
+                type="date"
+                label="Desde"
+                value={filtro.desde}
+                onChange={manejarFechaDesde}
+                fullWidth
+                InputLabelProps={{ shrink: true }}
+              />
+            </Grid>
+            <Grid item xs={12} sm={6} md={2}>
+              <TextField
+                type="date"
+                label="Hasta"
+                value={filtro.hasta}
+                onChange={manejarFechaHasta}
+                fullWidth
+                InputLabelProps={{ shrink: true }}
+              />
+            </Grid>
+            <Grid item xs={12} md={8}>
+              <Button 
+                variant="contained" 
+                startIcon={<DateRangeIcon />}
+                onClick={descargarPorRango} 
+                disabled={!filtro.desde || !filtro.hasta}
+                fullWidth
+                sx={{ py: 1.5, background: 'linear-gradient(135deg, var(--btn-crear-bg), #2980b9)', textTransform: 'none' }}
+              >
+                Descargar Informe por Rango
+              </Button>
+            </Grid>
+          </Grid>
+        </Paper>
 
-        <button onClick={descargarMensual} disabled={!filtro.mes || !filtro.anio}>
-          Descargar Informe Mensual
-        </button>
-        <button onClick={descargarPorRango} disabled={!filtro.desde || !filtro.hasta}>
-          Descargar Informe por Rango
-        </button>
-      </div>
+        {/* Tabla de Permisos */}
+        <Paper elevation={3} sx={{ borderRadius: 3, overflow: 'hidden', backgroundColor: 'var(--card-bg)' }}>
+          <Box sx={{ p: 3, borderBottom: '1px solid var(--color-border)' }}>
+            <Typography variant="h6" sx={{ fontWeight: 600, color: 'var(--color-text)' }}>
+              Últimos permisos
+            </Typography>
+          </Box>
+          
+          <TableContainer sx={{ maxHeight: 600 }}>
+            <Table stickyHeader aria-label="tabla de permisos">
+              <TableHead>
+                <TableRow>
+                  <TableCell sx={{ background: 'linear-gradient(135deg, var(--btn-crear-bg), #2980b9)', color: 'white', fontWeight: 'bold' }}>Usuario</TableCell>
+                  <TableCell sx={{ background: 'linear-gradient(135deg, var(--btn-crear-bg), #2980b9)', color: 'white', fontWeight: 'bold' }}>Tipo</TableCell>
+                  <TableCell sx={{ background: 'linear-gradient(135deg, var(--btn-crear-bg), #2980b9)', color: 'white', fontWeight: 'bold' }}>Subtipo</TableCell>
+                  <TableCell sx={{ background: 'linear-gradient(135deg, var(--btn-crear-bg), #2980b9)', color: 'white', fontWeight: 'bold' }}>Fecha inicio</TableCell>
+                  <TableCell sx={{ background: 'linear-gradient(135deg, var(--btn-crear-bg), #2980b9)', color: 'white', fontWeight: 'bold' }}>Fecha fin</TableCell>
+                  <TableCell sx={{ background: 'linear-gradient(135deg, var(--btn-crear-bg), #2980b9)', color: 'white', fontWeight: 'bold' }}>Estado</TableCell>
+                  <TableCell align="center" sx={{ background: 'linear-gradient(135deg, var(--btn-crear-bg), #2980b9)', color: 'white', fontWeight: 'bold' }}>Acciones</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {permisos.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={7} align="center" sx={{ py: 4, color: 'var(--color-text-secondary)', fontStyle: 'italic' }}>
+                      No hay permisos para mostrar con estos filtros.
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  permisos.map(p => (
+                    <TableRow key={p.id} hover sx={{ '&:hover': { backgroundColor: 'var(--color-surface-hover, rgba(0,0,0,0.02))' } }}>
+                      <TableCell sx={{ color: 'var(--color-text)' }}>{p.usuario.nombres} {p.usuario.apellidos}</TableCell>
+                      <TableCell sx={{ color: 'var(--color-text)' }}>{p.tipo.nombre}</TableCell>
+                      <TableCell sx={{ color: 'var(--color-text)' }}>{p.tipo.sub_tipo || '-'}</TableCell>
+                      <TableCell sx={{ color: 'var(--color-text)' }}>{p.fecha_inicio}</TableCell>
+                      <TableCell sx={{ color: 'var(--color-text)' }}>{p.fecha_fin}</TableCell>
+                      <TableCell>
+                        {renderEstadoChip(p.estado_general)}
+                      </TableCell>
+                      <TableCell align="center">
+                        <Tooltip title="Ver Carta">
+                          <IconButton 
+                            color="primary" 
+                            onClick={() => abrirDetalle(p)}
+                            sx={{ color: 'var(--color-link)' }}
+                          >
+                            <VisibilityIcon />
+                          </IconButton>
+                        </Tooltip>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        </Paper>
 
-      <div className="tabla-permisos-container">
-        <h3>Últimos permisos</h3>
-        {permisos.length === 0 ? (
-          <p>No hay permisos para mostrar con estos filtros.</p>
-        ) : (
-          <table className="tabla-permisos">
-            <thead>
-              <tr>
-                <th>Usuario</th>
-                <th>Tipo</th>
-                <th>Subtipo</th>
-                <th>Fecha inicio</th>
-                <th>Fecha fin</th>
-                <th>Estado</th>
-                <th>Acciones</th>
-              </tr>
-            </thead>
-            <tbody>
-              {permisos.map(p => (
-                <tr key={p.id}>
-                  <td>{p.usuario.nombres} {p.usuario.apellidos}</td>
-                  <td>{p.tipo.nombre}</td>
-                  <td>{p.tipo.sub_tipo}</td>
-                  <td>{p.fecha_inicio}</td>
-                  <td>{p.fecha_fin}</td>
-                  <td>{renderEstado(p.estado_general)}</td>
-                  <td>
-                    <button onClick={() => abrirDetalle(p)}>Ver</button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </div>
+        {/* MODAL MEJORADO TIPO HOJA A4 */}
+        <Dialog 
+          open={!!permisoDetalle} 
+          onClose={cerrarDetalle}
+          maxWidth="md"
+          fullWidth
+          PaperProps={{
+            sx: { 
+              borderRadius: 2, 
+              backgroundColor: '#e2e8f0', // Fondo gris oscuro para resaltar la hoja blanca
+              overflow: 'hidden'
+            }
+          }}
+        >
+          <DialogTitle sx={{ m: 0, p: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#334155', color: '#f8fafc' }}>
+            <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
+              Vista Previa del Documento
+            </Typography>
+            <IconButton
+              aria-label="close"
+              onClick={cerrarDetalle}
+              sx={{ color: '#94a3b8', '&:hover': { color: '#f8fafc' } }}
+            >
+              <CloseIcon />
+            </IconButton>
+          </DialogTitle>
 
-      {/* Toast para notificaciones */}
-      <ToastContainer
-        position="top-right"
-        autoClose={3500}
-        hideProgressBar={false}
-        newestOnTop
-        closeOnClick
-        pauseOnHover
-        draggable
-        theme="colored"
-      />
-    </div>
+          <DialogContent sx={{ p: { xs: 2, sm: 4 }, backgroundColor: '#cbd5e1', display: 'flex', justifyContent: 'center' }}>
+            <Paper
+              elevation={6}
+              sx={{
+                width: '100%',
+                maxWidth: '210mm',      // Ancho estándar A4
+                minHeight: '297mm',     // Alto estándar A4
+                backgroundColor: '#ffffff', // Hoja blanca pura
+                padding: '20mm',        // Márgenes del documento
+                boxSizing: 'border-box',
+                fontFamily: '"Times New Roman", Times, serif', // Tipografía formal
+                color: '#1e2a3a',       // Texto oscuro formal
+                '& *': {                // Forzar la fuente
+                  fontFamily: '"Times New Roman", Times, serif !important',
+                }
+              }}
+            >
+              {permisoDetalle && <CartaSeguimientoPermiso permiso={permisoDetalle} />}
+            </Paper>
+          </DialogContent>
+        </Dialog>
+
+      </Container>
+    </Box>
   );
 }
 

@@ -89,15 +89,49 @@ async function modificarEstadoPermiso({ permisoId, estado, observacion, username
     throw new Error('Permiso inválido o ya revisado');
   }
 
-  permiso.estado_general = estado;
+  permiso.estado_general = estado; // Guardará 'autorizado' o 'denegado'
   permiso.carga_vacaciones = carga_vacaciones ?? false;
   permiso.respuesta_director = observacion || null;
   permiso.fecha_revision_director = new Date();
   permiso.estado_director = true;
 
   marcarModificacion(permiso, username);
+  const permisoActualizado = await permisoRepo.save(permiso);
 
-  return await permisoRepo.save(permiso);
+  // ✅ NUEVO: Notificar al solicitante el veredicto final
+  try {
+    // Validamos qué campo de correo usa tu entidad Usuario (suele ser 'correo' o 'email')
+    const correoSolicitante = permiso.usuario.correo || permiso.usuario.email; 
+    
+    if (correoSolicitante) {
+      const estadoTexto = estado === 'autorizado' ? 'APROBADA ✅' : 'DENEGADA ❌';
+      const color = estado === 'autorizado' ? '#28a745' : '#dc3545';
+
+      await mailService.enviarCorreo({
+        to: correoSolicitante,
+        subject: `Resolución de tu Permiso: ${estadoTexto}`,
+        html: `
+          <div style="font-family: Arial, sans-serif; color: #333;">
+            <h2 style="color: ${color}">Tu solicitud de permiso ha sido ${estadoTexto}</h2>
+            <p>Hola <b>${permiso.usuario.nombres} ${permiso.usuario.apellidos}</b>,</p>
+            <p>La Dirección ha emitido una resolución para tu solicitud de permiso.</p>
+            <ul>
+              <li><b>Estado Final:</b> <span style="color: ${color}; font-weight: bold;">${estadoTexto}</span></li>
+              <li><b>Observación:</b> ${permiso.respuesta_director || 'Ninguna'}</li>
+            </ul>
+            <p>Puedes revisar los detalles completos ingresando al Sistema de Permisos del IAI.</p>
+          </div>
+        `
+      });
+      console.log(`✅ Correo de resolución (${estado}) enviado al solicitante.`);
+    } else {
+      console.warn('⚠️ No se encontró el correo del solicitante para notificarle.');
+    }
+  } catch (error) {
+    console.error('❌ Error al notificar al solicitante:', error);
+  }
+
+  return permisoActualizado;
 }
 
 async function editarPermiso({ permisoId, cambios, username }) {

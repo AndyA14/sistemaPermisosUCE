@@ -18,6 +18,7 @@ import {
   Button,
   Dialog,
   DialogContent,
+  DialogTitle,
   Chip,
   Stack,
   IconButton,
@@ -25,7 +26,8 @@ import {
 } from '@mui/material';
 import {
   Visibility as VisibilityIcon,
-  Description as DescriptionIcon
+  Description as DescriptionIcon,
+  Close as CloseIcon
 } from '@mui/icons-material';
 import { toast, ToastContainer } from 'react-toastify';
 
@@ -106,7 +108,7 @@ function MisSolicitudes() {
   const abrirDetalle = (permiso) => setPermisoDetalle(permiso);
   const cerrarDetalle = () => setPermisoDetalle(null);
 
-  // Helper para renderizar estados con Chips nativos de MUI (reemplaza CSS)
+  // Helper para renderizar estados con Chips nativos de MUI
   const renderEstadoChip = (estado) => {
     const estadoNorm = normalizar(estado);
     if (estadoNorm.includes('aprobado') || estadoNorm.includes('autorizado')) {
@@ -263,23 +265,52 @@ function MisSolicitudes() {
           </Table>
         </TableContainer>
 
-        {/* Modal de Seguimiento */}
+        {/* MODAL MEJORADO TIPO HOJA A4 */}
         <Dialog 
           open={!!permisoDetalle} 
           onClose={cerrarDetalle}
           maxWidth="md"
           fullWidth
           PaperProps={{
-            sx: {
-              borderRadius: 4,
-              backgroundColor: 'var(--color-bg)',
-              color: 'var(--color-text)'
+            sx: { 
+              borderRadius: 2, 
+              backgroundColor: '#e2e8f0', // Fondo gris oscuro para resaltar la hoja blanca
+              overflow: 'hidden'
             }
           }}
         >
-          <DialogContent sx={{ p: 0 }}>
-            {/* Se asume que CartaSeguimientoPermiso tiene su propio padding interno */}
-            {permisoDetalle && <CartaSeguimientoPermiso permiso={permisoDetalle} />}
+          <DialogTitle sx={{ m: 0, p: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#334155', color: '#f8fafc' }}>
+            <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
+              Vista Previa del Documento
+            </Typography>
+            <IconButton
+              aria-label="close"
+              onClick={cerrarDetalle}
+              sx={{ color: '#94a3b8', '&:hover': { color: '#f8fafc' } }}
+            >
+              <CloseIcon />
+            </IconButton>
+          </DialogTitle>
+
+          <DialogContent sx={{ p: { xs: 2, sm: 4 }, backgroundColor: '#cbd5e1', display: 'flex', justifyContent: 'center' }}>
+            <Paper
+              elevation={6}
+              sx={{
+                width: '100%',
+                maxWidth: '210mm',      // Ancho estándar A4
+                minHeight: '297mm',     // Alto estándar A4
+                backgroundColor: '#ffffff', // Hoja blanca pura
+                padding: '20mm',        // Márgenes del documento
+                boxSizing: 'border-box',
+                fontFamily: '"Times New Roman", Times, serif', // Tipografía formal
+                color: '#1e2a3a',       // Texto oscuro formal
+                '& *': {                // Forzar la fuente
+                  fontFamily: '"Times New Roman", Times, serif !important',
+                }
+              }}
+            >
+              {permisoDetalle && <CartaSeguimientoPermiso permiso={permisoDetalle} />}
+            </Paper>
           </DialogContent>
         </Dialog>
 

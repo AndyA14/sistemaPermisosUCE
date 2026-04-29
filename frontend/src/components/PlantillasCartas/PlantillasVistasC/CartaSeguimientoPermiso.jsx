@@ -8,66 +8,89 @@ const CartaSeguimientoPermiso = ({ permiso }) => {
     usuario,
     tipo,
     descripcion,
-    estado_general,
-    observacion_tthh,
-    fecha_revision_tthh,
-    respuesta_director,
-    fecha_revision_director,
     fecha_solicitud,
     fecha_inicio,
     fecha_fin,
     hora_inicio,
     hora_fin,
-    carga_vacaciones,
+    estado_general,
   } = permiso;
 
-  const formatFecha = (fecha) => {
-    if (!fecha) return '—';
-    return new Date(fecha).toLocaleString('es-EC', {
-      day: '2-digit', month: '2-digit', year: 'numeric',
-      hour: '2-digit', minute: '2-digit'
-    });
-  };
+  // Formateo de fechas para el párrafo (Ej: 26 de febrero de 2026)
+  const fechaOptions = { year: 'numeric', month: 'long', day: 'numeric' };
+  
+  // Añadimos 'T12:00:00' para evitar desfases de zona horaria al formatear
+  const fInicioStr = fecha_inicio ? new Date(`${fecha_inicio}T12:00:00`).toLocaleDateString('es-EC', fechaOptions) : '';
+  const fFinStr = fecha_fin ? new Date(`${fecha_fin}T12:00:00`).toLocaleDateString('es-EC', fechaOptions) : '';
+  
+  let periodoTexto = '';
+  if (fecha_inicio && fecha_fin && fecha_inicio !== fecha_fin) {
+      periodoTexto = `el período comprendido entre el ${fInicioStr} y el ${fFinStr}`;
+  } else if (fecha_inicio) {
+      periodoTexto = `el día ${fInicioStr}`;
+  }
+
+  let horasTexto = '';
+  if (hora_inicio && hora_fin) {
+      horasTexto = `, en el horario de ${hora_inicio} a ${hora_fin}`;
+  }
 
   return (
     <CartaLayout fechaSolicitud={fecha_solicitud}>
-      <h3 style={{ textAlign: 'center', marginBottom: '1rem' }}>
-        Seguimiento de Solicitud de Permiso ({tipo?.nombre || 'Desconocido'}{tipo?.sub_tipo ? ` - ${tipo.sub_tipo}` : ''})
-      </h3>
+      {/* DESTINATARIO */}
+      <div style={{ marginBottom: '2rem', lineHeight: '1.5' }}>
+        <p style={{ margin: 0 }}><strong>Señor:</strong></p>
+        <p style={{ margin: 0 }}>Ph.D. (c) Wilson Patricio Chilouiza Vásquez</p>
+        <p style={{ margin: 0 }}><strong>DIRECTOR DEL INSTITUTO ACADÉMICO DE IDIOMAS</strong></p>
+        <p style={{ margin: 0 }}>Presente.-</p>
+      </div>
 
-      {/* 🚨 PROTECCIÓN APLICADA AQUÍ 🚨 */}
-      <p>
-        <strong>Solicitante:</strong> {usuario?.nombres || 'Usuario'} {usuario?.apellidos || 'Desconocido'} (<strong>CI:</strong> {usuario?.ci || 'N/A'})
+      {/* SALUDO */}
+      <p style={{ fontWeight: 'bold', marginBottom: '1.5rem' }}>De mi consideración:</p>
+
+      {/* PÁRRAFO 1: Solicitud */}
+      <p style={{ textAlign: 'justify', marginBottom: '1.5rem', lineHeight: '1.6' }}>
+        Yo, <strong>{usuario?.nombres} {usuario?.apellidos}</strong>, portador(a) de la cédula de identidad N.º <strong>{usuario?.ci}</strong>, me dirijo a usted respetuosamente con el fin de justificar un(a) <strong>{tipo?.nombre?.toLowerCase() || 'permiso'}</strong> correspondiente a {periodoTexto}{horasTexto}.
       </p>
-      
-      <p><strong>Tipo de Permiso:</strong> {tipo?.nombre || 'Desconocido'}{tipo?.sub_tipo ? ` - ${tipo.sub_tipo}` : ''}</p>
-      <p><strong>Fecha/Fechas:</strong> {fecha_inicio || '—'} {fecha_inicio !== fecha_fin ? `hasta ${fecha_fin || '—'}` : ''}</p>
-      <p><strong>Horas:</strong> {hora_inicio || '—'} a {hora_fin || '—'}</p>
-      <p><strong>Motivo:</strong> <em>{descripcion || '—'}</em></p>
-      <p><strong>Estado General:</strong> {estado_general?.toUpperCase() || 'DESCONOCIDO'}</p>
-      <p><strong>Carga a Vacaciones:</strong> {carga_vacaciones ? 'Sí' : 'No'}</p>
 
-      <hr />
+      {/* PÁRRAFO 2: Motivo */}
+      <p style={{ textAlign: 'justify', marginBottom: '1.5rem', lineHeight: '1.6' }}>
+        Dicha inasistencia se debió a <em>{tipo?.sub_tipo ? tipo.sub_tipo.toLowerCase() : 'motivos personales'}</em>. {descripcion ? `${descripcion}` : ''}
+      </p>
 
-      <h4>Revisión Talento Humano</h4>
-      <p><strong>Estado de Revisión:</strong> {permiso?.revisado_tthh ? '✔️ Revisado' : '⏳ Pendiente'}</p>
-      <p><strong>Fecha de Revisión:</strong> {formatFecha(fecha_revision_tthh)}</p>
-      <p><strong>Observación:</strong> <em>{observacion_tthh || '—'}</em></p>
+      {/* PÁRRAFO 3: Cierre */}
+      <p style={{ textAlign: 'justify', marginBottom: '1.5rem', lineHeight: '1.6' }}>
+        Solicito se considere la presente justificación y quedo atento(a) para proporcionar documentación adicional si fuese requerida.
+      </p>
 
-      <h4>Revisión Dirección</h4>
-      <p><strong>Estado de Revisión:</strong> {
-        permiso?.estado_director === true 
-          ? '✔️ Revisado' 
-          : permiso?.estado_director === false 
-            ? '❌ Denegado (revisado)' 
-            : '⏳ Pendiente'
-      }</p>
-      <p><strong>Fecha de Revisión:</strong> {formatFecha(fecha_revision_director)}</p>
-      <p><strong>Respuesta del Director:</strong> <em>{respuesta_director || '—'}</em></p>
+      <p style={{ marginBottom: '3rem', fontStyle: 'italic' }}>
+        Agradezco su comprensión y colaboración.
+      </p>
 
-      <hr />
+      {/* FIRMA Y DATOS DEL SOLICITANTE */}
+      <div style={{ lineHeight: '1.5' }}>
+        <p style={{ margin: 0 }}>Atentamente,</p>
+        <p style={{ margin: 0, marginTop: '2.5rem' }}><strong>{usuario?.nombres} {usuario?.apellidos}</strong></p>
+        <p style={{ margin: 0 }}>{usuario?.rol ? usuario.rol.charAt(0).toUpperCase() + usuario.rol.slice(1) : 'Usuario'}</p>
+        <p style={{ margin: 0 }}>C.I.: {usuario?.ci}</p>
+        <p style={{ margin: 0 }}>Correo: {usuario?.correo}</p>
+        <p style={{ margin: 0 }}>Teléfono: {usuario?.telefono}</p>
+        <p style={{ margin: 0 }}>Dirección: {usuario?.direccion || 'Quito'}</p>
+      </div>
 
-      <p className="agradecimiento-derecha">Esta información es una vista del seguimiento completo de tu solicitud.</p>
+      {/* MINI SELLO DE ESTADO (Para no perder la trazabilidad) */}
+      <div style={{ 
+        marginTop: '3rem', 
+        borderTop: '1px solid #e2e8f0', 
+        paddingTop: '1rem', 
+        fontSize: '0.85rem', 
+        color: '#64748b',
+        display: 'flex',
+        justifyContent: 'space-between'
+      }}>
+        <span><strong>Estado en Sistema:</strong> {estado_general?.toUpperCase()}</span>
+        <span><em>Documento digital generado por el Sistema de Permisos</em></span>
+      </div>
     </CartaLayout>
   );
 };

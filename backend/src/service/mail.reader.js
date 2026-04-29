@@ -1,3 +1,4 @@
+// src/service/mail.reader.js
 require('dotenv').config();
 const imaps = require('imap-simple');
 const { simpleParser } = require('mailparser');
@@ -21,44 +22,37 @@ async function leerCorreosPorAlias(alias) {
   await connection.openBox('INBOX');
 
   try {
-    // 1. Filtro base de 15 días
     const fechaLimite = new Date();
     fechaLimite.setDate(fechaLimite.getDate() - 15);
 
-    // ==========================================
-    // FASE 1: BÚSQUEDA NATIVA (Rápida y segura)
-    // ==========================================
     const uids = await new Promise((resolve, reject) => {
-      // Usamos la función nativa que no falla
       connection.imap.search([['TO', aliasCompleto], ['SINCE', fechaLimite]], (err, results) => {
         if (err) return reject(err);
         resolve(results);
       });
     });
 
-    if (!uids || uids.length === 0) {
-      return [];
-    }
+    if (!uids || uids.length === 0) return [];
+
+    const ultimos5Uids = uids.slice(-5);
 
     // ==========================================
-    // FASE 2: DESCARGA NATIVA (SOLO 5 CORREOS)
+    // FASE 2: DESCARGA ULTRA-LIGERA (SOLO TEXTO)
     // ==========================================
-    // Aquí cortamos el peso a la mitad para evitar los 12 segundos
-    const ultimos5Uids = uids.slice(-5); 
-
+    // ==========================================
+    // FASE 2: DESCARGA NATIVA
+    // ==========================================
     const messagesDetallados = await new Promise((resolve, reject) => {
       const fetchOptions = { bodies: [''], struct: true, markSeen: false };
-      // El fetch nativo SÍ entiende arreglos sin bugearse
       const f = connection.imap.fetch(ultimos5Uids, fetchOptions);
-      const msgs = [];
       
+      const msgs = [];
       f.on('message', (msg, seqno) => {
         const message = { attributes: null, parts: [] };
         
         msg.on('body', (stream, info) => {
           let bodyBuffer = Buffer.alloc(0);
           stream.on('data', (chunk) => {
-            // Ensamblaje seguro de los PDFs grandes
             bodyBuffer = Buffer.concat([bodyBuffer, chunk]); 
           });
           stream.on('end', () => {
@@ -74,23 +68,25 @@ async function leerCorreosPorAlias(alias) {
       f.once('end', () => resolve(msgs));
     });
 
-    messagesDetallados.sort((a, b) => a.attributes.uid - b.attributes.uid);
-
-    // ==========================================
-    // FASE 3: PARSEO Y RETORNO
-    // ==========================================
     const correos = await Promise.all(
       messagesDetallados.map(async (msg) => {
         const rawPart = msg.parts.find(p => p.which === '');
         if (!rawPart || !rawPart.body) return null;
 
-        const parsed = await simpleParser(rawPart.body);
+        // === OPTIMIZACIÓN NIVEL DIOS (RESTAURADA) ===
+        // Evitamos que el parser gaste recursos en buscar adjuntos o links
+        const parsed = await simpleParser(rawPart.body, {
+          skipHtmlToText: true,
+          skipTextToHtml: true,
+          skipTextLinks: true,
+          skipImageLinks: true,
+        });
 
-        const adjuntos = parsed.attachments.map(att => ({
+        const adjuntos = parsed.attachments ? parsed.attachments.map(att => ({
           filename: att.filename,
           contentType: att.contentType,
           size: `${(att.size / 1024).toFixed(1)} KB`,
-        }));
+        })) : [];
 
         return {
           id: msg.attributes.uid,

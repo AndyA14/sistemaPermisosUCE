@@ -471,47 +471,58 @@ function SolicitudesDirector() {
             </Grid>
           </Grid>
 
+          {/* ADJUNTOS DESDE LA BASE DE DATOS (NUEVA ARQUITECTURA) */}
           <Paper elevation={3} sx={{ mt: 4, p: 4, borderRadius: 2, backgroundColor: 'var(--card-bg)' }}>
             <Typography variant="h6" gutterBottom sx={{ fontWeight: 600, color: 'var(--color-text)' }}>
-              Adjuntos:
+              Evidencia Adjunta:
             </Typography>
             
-            {correoSeleccionado.attachments?.length > 0 ? (
-              <List>
-                {correoSeleccionado.attachments.map((adj, i) => (
-                  <ListItem key={i} disableGutters>
-                    <ListItemIcon>
-                      <AttachmentIcon sx={{ color: 'var(--color-text)' }} />
-                    </ListItemIcon>
-                    <ListItemText 
-                      primary={adj.filename} 
-                      secondary={adj.size || ''} 
-                      primaryTypographyProps={{ color: 'var(--color-text)' }}
-                      secondaryTypographyProps={{ color: 'var(--color-text-secondary)' }}
-                    />
+            {(() => {
+              // 1. Buscamos la evidencia en el arreglo de documentos o en la variable directa
+              let rutaEvidencia = null;
+              
+              if (permisoSeleccionado?.documentos && permisoSeleccionado.documentos.length > 0) {
+                // Buscamos el documento original (ignoramos los PDF de respuesta que genera el sistema)
+                const doc = permisoSeleccionado.documentos.find(d => d.tipo !== 'Respuesta PDF');
+                if (doc) rutaEvidencia = doc.url || doc.ruta || doc.fileUrl;
+              }
+              
+              // Fallback por si tu backend lo envía como variable simple
+              if (!rutaEvidencia) {
+                 rutaEvidencia = permisoSeleccionado?.documento || permisoSeleccionado?.url_documento;
+              }
+
+              if (rutaEvidencia) {
+                // 2. Limpiamos la ruta para obtener solo el nombre del archivo
+                const nombreArchivo = rutaEvidencia.split('/').pop();
+                
+                return (
+                  <Box>
                     <Button 
                       variant="outlined" 
-                      size="small"
-                      onClick={() => setAdjuntoSeleccionado(adj)}
-                      sx={{ ml: 2 }}
+                      startIcon={<AttachmentIcon sx={{ color: 'var(--color-text)' }} />}
+                      onClick={() => setAdjuntoSeleccionado({ filename: nombreArchivo })}
                     >
-                      Ver adjunto
+                      Ver Evidencia del Docente
                     </Button>
-                  </ListItem>
-                ))}
-              </List>
-            ) : (
-              <Typography variant="body2" sx={{ color: 'var(--color-text-secondary)', fontStyle: 'italic' }}>
-                (sin adjuntos)
-              </Typography>
-            )}
+                  </Box>
+                );
+              } else {
+                return (
+                  <Typography variant="body2" sx={{ color: 'var(--color-text-secondary)', fontStyle: 'italic' }}>
+                    (Este permiso no requiere evidencia o el docente no la adjuntó)
+                  </Typography>
+                );
+              }
+            })()}
 
+            {/* El visor de PDF se mantiene igual */}
             {adjuntoSeleccionado && (
               <Box sx={{ mt: 4, textAlign: 'center', p: 2, border: '1px solid var(--color-border)', borderRadius: 2, bgcolor: 'var(--color-bg-secondary)' }}>
-                {esPDF ? (
-                  <iframe src={url} width="100%" height="700px" title="Evidencia PDF" style={{ border: 'none', borderRadius: '4px' }} />
+                {obtenerUrlDocumento(adjuntoSeleccionado.filename).toLowerCase().endsWith('.pdf') ? (
+                  <iframe src={obtenerUrlDocumento(adjuntoSeleccionado.filename)} width="100%" height="700px" title="Evidencia PDF" style={{ border: 'none', borderRadius: '4px' }} />
                 ) : (
-                  <img src={url} alt="Evidencia" style={{ maxWidth: '100%', maxHeight: '700px', borderRadius: '4px' }} />
+                  <img src={obtenerUrlDocumento(adjuntoSeleccionado.filename)} alt="Evidencia" style={{ maxWidth: '100%', maxHeight: '700px', borderRadius: '4px' }} />
                 )}
               </Box>
             )}

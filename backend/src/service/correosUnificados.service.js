@@ -28,10 +28,14 @@ async function procesarCorreosYPermisosPorRol(alias, revisadoTTHH = null) {
 
   const permisoRepo = AppDataSource.getRepository(Permiso);
 
-  // Consultar permisos pendientes
+  // =======================================================
+  // 1. CONSULTAR PERMISOS PENDIENTES (CON DOCUMENTOS INCLUIDOS)
+  // =======================================================
   let queryPendientes = permisoRepo.createQueryBuilder('permiso')
     .leftJoinAndSelect('permiso.usuario', 'usuario')
     .leftJoinAndSelect('permiso.tipo', 'tipo')
+    // ¡ESTA ES LA LÍNEA MÁGICA QUE REVIVE TUS PDFS EN EL FRONTEND! 👇
+    .leftJoinAndSelect('permiso.documentos', 'documentos') 
     .where('EXTRACT(MONTH FROM permiso.fecha_solicitud) = :mes', { mes })
     .andWhere('EXTRACT(YEAR FROM permiso.fecha_solicitud) = :anio', { anio })
     .andWhere('permiso.estado_general IN (:...estados)', { estados: ['pendiente', 'en_revision'] })
@@ -45,10 +49,14 @@ async function procesarCorreosYPermisosPorRol(alias, revisadoTTHH = null) {
 
   const permisosPendientes = await queryPendientes.getMany();
 
-  // Consultar permisos finalizados
+  // =======================================================
+  // 2. CONSULTAR PERMISOS FINALIZADOS (CON DOCUMENTOS INCLUIDOS)
+  // =======================================================
   const permisosFinalizados = await permisoRepo.createQueryBuilder('permiso')
     .leftJoinAndSelect('permiso.usuario', 'usuario')
     .leftJoinAndSelect('permiso.tipo', 'tipo')
+    // Agregamos los documentos aquí también por precaución 👇
+    .leftJoinAndSelect('permiso.documentos', 'documentos')
     .where('EXTRACT(MONTH FROM permiso.fecha_solicitud) = :mes', { mes })
     .andWhere('EXTRACT(YEAR FROM permiso.fecha_solicitud) = :anio', { anio })
     .andWhere('permiso.estado_general IN (:...estados)', { estados: ['autorizado', 'denegado'] })

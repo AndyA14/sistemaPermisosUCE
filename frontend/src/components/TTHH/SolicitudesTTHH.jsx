@@ -70,25 +70,23 @@ function SolicitudesTTHH() {
   const manejarRevision = async () => {
     if (!permisoSeleccionado) return;
 
-    setProcesandoAccion(true); // Levantamos el modal blanco
+    setProcesandoAccion(true);
 
     try {
       await revisarPermisoPorTTHH(permisoSeleccionado.id, { observacion });
       toast.success('Revisión confirmada con éxito.');
       
-      // Limpiamos los estados de inmediato
       setCorreoSeleccionado(null);
       setPermisoSeleccionado(null);
       setAdjuntoSeleccionado(null);
       setObservacion('');
       
-      // Recargamos la tabla sin el "setTimeout"
       await fetchCorreos(); 
     } catch (e) {
       console.log(`Error al revisar permiso: ${e.message}`);
       toast.error('Error al procesar la revisión.');
     } finally {
-      setProcesandoAccion(false); // Escondemos el modal blanco
+      setProcesandoAccion(false);
     }
   };
 
@@ -151,7 +149,8 @@ function SolicitudesTTHH() {
 
           <Grid container spacing={4}>
             
-            <Grid item xs={12} md={5}>
+            {/* Columna Izquierda: Detalles */}
+            <Grid item xs={12} md={5} lg={4}>
               <Paper elevation={3} sx={{ p: 4, borderRadius: 2, backgroundColor: 'var(--card-bg)', height: '100%', display: 'flex', flexDirection: 'column' }}>
                 <Typography variant="h6" gutterBottom sx={{ fontWeight: 600, color: 'var(--color-text)', display: 'flex', alignItems: 'center', gap: 1 }}>
                   📝 Detalles del Permiso
@@ -224,92 +223,129 @@ function SolicitudesTTHH() {
               </Paper>
             </Grid>
 
+            {/* COLUMNA DERECHA: VISTA PREVIA IDÉNTICA AL DIRECTOR */}
             <Grid item xs={12} md={7} lg={8}>
-              <Box sx={{ 
-                width: '100%', 
-                display: 'flex', 
-                justifyContent: 'center', 
-                backgroundColor: '#eaeff2', 
-                py: 4,
-                borderRadius: 2,
-                overflowY: 'auto',
-                maxHeight: '100vh',
-                position: { md: 'sticky' }, 
-                top: { md: 24 } 
-              }}>
-                <Paper 
-                  elevation={6} 
-                  sx={{ 
-                    width: '100%', 
-                    maxWidth: '800px', 
-                    minHeight: '1050px',
-                    padding: { xs: 2, sm: '1.3cm 2cm' },
-                    backgroundColor: '#ffffff', 
-                    color: '#2c3e50', 
-                    fontFamily: '"Times New Roman", Times, serif', 
-                    borderRadius: 1, 
+              <Box
+                sx={{
+                  width: '100%',
+                  display: 'flex',
+                  justifyContent: 'center',
+                  backgroundColor: '#eaeff2', // Fondo oscuro/gris para resaltar la hoja
+                  py: 4,
+                  borderRadius: 2,
+                  overflowY: 'auto',
+                  maxHeight: '100vh',
+                  position: { md: 'sticky' },
+                  top: { md: 24 }
+                }}
+              >
+                <Paper
+                  elevation={6}
+                  sx={{
+                    width: '210mm', // Ancho estricto A4
+                    minHeight: '297mm',
+                    backgroundColor: '#ffffff',
+                    padding: '20mm',
                     boxSizing: 'border-box',
-                    display: 'flex',
-                    flexDirection: 'column'
+                    borderRadius: 2,
+                    position: 'relative',
+                    fontFamily: '"Times New Roman", Times, serif',
+                    color: '#1e2a3a'
                   }}
                 >
-                  <Typography 
-                    variant="caption" 
-                    sx={{ 
-                      display: 'block', 
-                      textAlign: 'center', 
-                      mb: 2, 
-                      color: 'grey.400', 
-                      textTransform: 'uppercase',
-                      letterSpacing: 1,
-                      borderBottom: '1px solid #eee',
-                      pb: 1
+                  <Box
+                    sx={{
+                      '& img': {
+                        display: 'block',
+                        margin: '0 auto',
+                        maxWidth: '120px',
+                        mb: 2
+                      },
+                      '& .titulo-institucion': {
+                        textAlign: 'center',
+                        fontWeight: 700,
+                        textTransform: 'uppercase',
+                        fontSize: '14px',
+                        lineHeight: 1.4,
+                        mb: 3
+                      },
+                      '& .fecha': {
+                        textAlign: 'right',
+                        mb: 3,
+                        fontSize: '13px'
+                      },
+                      '& .destinatario': {
+                        textAlign: 'left',
+                        mb: 3,
+                        fontSize: '13px'
+                      },
+                      '& .texto': {
+                        textAlign: 'justify',
+                        fontSize: '13.5px',
+                        lineHeight: 1.6,
+                        mb: 2
+                      },
+                      '& .firma': {
+                        marginTop: '40px',
+                        fontSize: '13px'
+                      }
                     }}
                   >
-                  </Typography>
-
-                  <iframe
-                    srcDoc={`
-                      <html>
-                        <head>
-                          <style>
-                            @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&display=swap');
-                            
-                            body { 
-                              margin: 0; 
-                              padding: 0; 
-                              font-family: "Times New Roman", Times, serif; 
-                              line-height: 1.5;
-                              color: #2c3e50;
-                            }
-                            
-                            .carta-body { width: 100%; }
-                            .carta-encabezado { font-weight: 600; text-transform: uppercase; text-align: center; margin-bottom: 2rem; }
-                            .fecha-derecha { text-align: right; margin-bottom: 1.5rem; }
-                            .destinatario-derecha { text-align: left; margin-bottom: 1.5rem; line-height: 1.3; }
-                            .saludo { font-weight: 600; margin-bottom: 1.5rem; }
-                            .contenido-justificado { text-align: justify; margin: 1rem 0; word-break: break-word; }
-                            .firma-derecha { margin-top: 3rem; }
-                            
-                            table { width: 100% !important; border-collapse: collapse; }
-                            img { max-width: 150px; height: auto; display: block; margin: 0 auto 1rem auto; }
-                          </style>
-                        </head>
-                        <body>
-                          <div class="carta-body">
-                            ${correoSeleccionado.html || `<div style="white-space: pre-wrap;">${correoSeleccionado.text}</div>`}
-                          </div>
-                        </body>
-                      </html>
-                    `}
-                    title="Visualizador de Documento"
-                    style={{ 
-                      width: '100%', 
-                      flexGrow: 1, 
-                      border: 'none',
-                      overflow: 'hidden'
-                    }}
-                  />
+                    {correoSeleccionado?.html ? (
+                      <div
+                           dangerouslySetInnerHTML={{
+                             __html: `
+                               <style>
+                                 body {
+                                   font-family: "Times New Roman", serif;
+                                   color: #1e2a3a;
+                                   line-height: 1.6;
+                                 }
+                                 img {
+                                   display: block;
+                                   margin: 0 auto;
+                                   max-width: 120px;
+                                 }
+                                 .titulo-institucion {
+                                   text-align: center;
+                                   font-weight: bold;
+                                   text-transform: uppercase;
+                                   font-size: 14px;
+                                   margin-bottom: 20px;
+                                 }
+                                 .fecha {
+                                   text-align: right;
+                                   font-size: 13px;
+                                   margin-bottom: 20px;
+                                 }
+                                 .destinatario {
+                                   font-size: 13px;
+                                   margin-bottom: 20px;
+                                 }
+                                 .texto {
+                                   text-align: justify;
+                                   font-size: 13.5px;
+                                   margin-bottom: 15px;
+                                 }
+                                 .firma {
+                                   margin-top: 40px;
+                                   font-size: 13px;
+                                 }
+                                 table {
+                                   width: 100%;
+                                   border-collapse: collapse;
+                                 }
+                               </style>
+                               ${correoSeleccionado.html}
+                             `
+                            }}
+                      />
+                    ) : (
+                      <div style={{ whiteSpace: 'pre-wrap' }}>
+                        {correoSeleccionado?.text || ''}
+                      </div>
+                    )}
+                  </Box>
                 </Paper>
               </Box>
             </Grid>
@@ -436,8 +472,6 @@ function SolicitudesTTHH() {
         )}
 
         <ToastContainer position="top-right" autoClose={3500} hideProgressBar={false} theme="colored" />
-        
-        {/* EL ARREGLO ESTÁ AQUÍ: Solo muestra el modal cuando se procesa una acción (clic en botón), NO en la carga inicial */}
         <LoadingModal visible={procesandoAccion} />
       </Container>
     </Box>

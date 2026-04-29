@@ -10,7 +10,7 @@ import {
   InputAdornment, 
   Alert,
   IconButton,
-  useTheme // <-- Agregado para soportar modo claro/oscuro
+  useTheme 
 } from '@mui/material';
 import { 
   Lock as LockIcon,
@@ -22,6 +22,8 @@ import {
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+import { toast, ToastContainer } from 'react-toastify'; // Agregamos Toastify para mensajes elegantes
+import 'react-toastify/dist/ReactToastify.css';
 
 import { resetearContrasena } from '../services/api';
 import LoadingModal from '../components/LoadingModal';
@@ -36,7 +38,7 @@ const resetSchema = z.object({
   confirmar: z.string()
 }).refine((data) => data.contrasena === data.confirmar, {
   message: 'Las contraseñas no coinciden',
-  path: ['confirmar'], // El error se mostrará en el campo "confirmar"
+  path: ['confirmar'],
 });
 
 function ResetPassword() {
@@ -44,7 +46,6 @@ function ResetPassword() {
   const navigate = useNavigate();
   const theme = useTheme();
 
-  const [mensaje, setMensaje] = useState('');
   const [errorAPI, setErrorAPI] = useState('');
   const [loading, setLoading] = useState(false);
   
@@ -63,22 +64,25 @@ function ResetPassword() {
       contrasena: '',
       confirmar: ''
     },
-    mode: 'onChange' // Valida mientras el usuario escribe
+    mode: 'onChange'
   });
 
   const onSubmitForm = async (data) => {
-    setMensaje('');
     setErrorAPI('');
     setLoading(true);
 
     try {
       const res = await resetearContrasena(token, data.contrasena);
-      setMensaje(res.mensaje || 'Contraseña actualizada correctamente.');
-      setTimeout(() => navigate('/login'), 3000);
+      toast.success(res.mensaje || 'Contraseña actualizada correctamente.');
+      
+      // Navegación rápida: Esperamos solo 800ms para que el usuario alcance a leer el Toast
+      setTimeout(() => {
+        navigate('/login', { replace: true }); // Usamos replace para que no puedan dar "Atrás" a esta página
+      }, 800);
+      
     } catch (err) {
       setErrorAPI(err.message || 'Error al restablecer la contraseña.');
-    } finally {
-      setLoading(false);
+      setLoading(false); // Solo ocultamos el loading si hay error
     }
   };
 
@@ -89,13 +93,13 @@ function ResetPassword() {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        // Fondo dinámico igualado a Login.jsx
         background: theme.palette.mode === 'dark' 
           ? 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)' 
           : 'linear-gradient(135deg, #1a237e 0%, #0d47a1 100%)',
         padding: 2,
       }}
     >
+      <ToastContainer position="top-right" autoClose={3000} theme="colored" />
       <Container maxWidth="xs">
         <Paper
           elevation={6}
@@ -105,7 +109,6 @@ function ResetPassword() {
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
-            // Color de tarjeta dinámico igualado a Login.jsx
             backgroundColor: theme.palette.mode === 'dark' ? 'rgba(30, 41, 59, 0.9)' : 'rgba(255, 255, 255, 0.95)',
             backdropFilter: 'blur(10px)',
             transition: 'transform 0.3s ease',
@@ -131,7 +134,6 @@ function ResetPassword() {
           <Box component="form" onSubmit={handleSubmit(onSubmitForm)} sx={{ width: '100%' }}>
             
             {errorAPI && <Alert severity="error" sx={{ mb: 2 }}>{errorAPI}</Alert>}
-            {mensaje && <Alert severity="success" sx={{ mb: 2 }}>{mensaje}</Alert>}
 
             {/* Campo Nueva Contraseña */}
             <Controller
@@ -212,7 +214,6 @@ function ResetPassword() {
                 py: 1.5,
                 borderRadius: 2,
                 fontWeight: 'bold',
-                // Botón dinámico igualado a Login.jsx
                 backgroundColor: theme.palette.mode === 'dark' ? '#0ea5e9' : '#1a237e',
                 '&:hover': { 
                   backgroundColor: theme.palette.mode === 'dark' ? '#0284c7' : '#0d47a1' 

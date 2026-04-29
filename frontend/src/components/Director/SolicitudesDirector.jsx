@@ -91,7 +91,7 @@ function SolicitudesDirector() {
       setPermisoSeleccionado(null);
       setAdjuntoSeleccionado(null);
       setObservacion('');
-      setCargaVacaciones(false); // Reset de checkbox
+      setCargaVacaciones(false); 
       setError(null);
     } catch (e) {
       toast.error(`❌ Error al autorizar: ${e.message}`, {
@@ -120,7 +120,7 @@ function SolicitudesDirector() {
       setPermisoSeleccionado(null);
       setAdjuntoSeleccionado(null);
       setObservacion('');
-      setCargaVacaciones(false); // Reset de checkbox
+      setCargaVacaciones(false); 
       setError(null);
     } catch (e) {
       toast.error(`⚠️ Error al denegar: ${e.message}`, {
@@ -144,7 +144,7 @@ function SolicitudesDirector() {
   // VISTA DE DETALLE
   // ==========================================
   if (correoSeleccionado) {
-    // === LÓGICA INTELIGENTE DE VACACIONES (AQUÍ SE CALCULA PARA EL RENDER) ===
+    // LÓGICA INTELIGENTE DE VACACIONES
     const subtipo = permisoSeleccionado?.tipo?.sub_tipo?.toLowerCase() || '';
     const requiereEvidencia = (subtipo.includes('requiere') || subtipo.includes('con_')) && !subtipo.includes('sin_');
 
@@ -262,7 +262,6 @@ function SolicitudesDirector() {
                     variant="outlined"
                   />
 
-                  {/* === CHECKBOX CONDICIONAL === */}
                   <FormControlLabel
                     control={
                       <Checkbox 
@@ -561,7 +560,9 @@ function SolicitudesDirector() {
         )}
 
         <ToastContainer position="top-right" autoClose={3500} hideProgressBar={false} theme="colored" />
-        <LoadingModal visible={procesandoAccion || cargando} />
+        
+        {/* EL ARREGLO ESTÁ AQUÍ: Solo mostrar cuando el Director esté autorizando o denegando */}
+        <LoadingModal visible={procesandoAccion} />
       </Container>
     </Box>
   );

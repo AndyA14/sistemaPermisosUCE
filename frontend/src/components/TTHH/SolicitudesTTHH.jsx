@@ -70,21 +70,25 @@ function SolicitudesTTHH() {
   const manejarRevision = async () => {
     if (!permisoSeleccionado) return;
 
-    setProcesandoAccion(true);
+    setProcesandoAccion(true); // Levantamos el modal blanco
 
     try {
       await revisarPermisoPorTTHH(permisoSeleccionado.id, { observacion });
-      setTimeout(async () => {
-        setCorreoSeleccionado(null);
-        setPermisoSeleccionado(null);
-        setAdjuntoSeleccionado(null);
-        setObservacion('');
-        await fetchCorreos();
-      }, 1000);
+      toast.success('Revisión confirmada con éxito.');
+      
+      // Limpiamos los estados de inmediato
+      setCorreoSeleccionado(null);
+      setPermisoSeleccionado(null);
+      setAdjuntoSeleccionado(null);
+      setObservacion('');
+      
+      // Recargamos la tabla sin el "setTimeout"
+      await fetchCorreos(); 
     } catch (e) {
       console.log(`Error al revisar permiso: ${e.message}`);
+      toast.error('Error al procesar la revisión.');
     } finally {
-      setProcesandoAccion(false);
+      setProcesandoAccion(false); // Escondemos el modal blanco
     }
   };
 
@@ -102,18 +106,10 @@ function SolicitudesTTHH() {
   if (correoSeleccionado) {
     let url = '';
     if (adjuntoSeleccionado) {
-      // 1. Detectamos si el adjunto es la Evidencia o el PDF generado por el sistema
-      // (Asumimos que el PDF del sistema termina en _Permiso.pdf como en tu captura)
       const esEvidencia = !adjuntoSeleccionado.filename.endsWith('_Permiso.pdf');
-
-      // 2. Si es la evidencia, ignoramos el nombre corrupto del correo y extraemos 
-      // el nombre perfecto directamente del objeto de la base de datos.
-      // ⚠️ OJO: Cambia ".documento" si en tu backend la columna se llama ".archivo" o ".evidencia"
       const nombreSeguro = (esEvidencia && permisoSeleccionado?.documento) 
         ? permisoSeleccionado.documento 
         : adjuntoSeleccionado.filename;
-
-      // 3. Generamos la URL con el nombre correcto
       url = obtenerUrlDocumento(nombreSeguro);
     }
 
@@ -136,7 +132,6 @@ function SolicitudesTTHH() {
             Volver a la lista
           </Button>
 
-          {/* ENCABEZADO */}
           <Paper elevation={3} sx={{ p: 3, mb: 4, borderRadius: 2, backgroundColor: 'var(--color-header-bg)', color: 'var(--color-header-text)' }}>
             <Typography variant="h5" gutterBottom sx={{ fontWeight: 'bold' }}>
               Solicitud de permiso de {correoSeleccionado.from}
@@ -154,10 +149,8 @@ function SolicitudesTTHH() {
             </Grid>
           </Paper>
 
-          {/* CONTENIDO PRINCIPAL: PERMISO E IFRAME */}
           <Grid container spacing={4}>
             
-            {/* Columna Izquierda: Detalles y Revisión */}
             <Grid item xs={12} md={5}>
               <Paper elevation={3} sx={{ p: 4, borderRadius: 2, backgroundColor: 'var(--card-bg)', height: '100%', display: 'flex', flexDirection: 'column' }}>
                 <Typography variant="h6" gutterBottom sx={{ fontWeight: 600, color: 'var(--color-text)', display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -231,13 +224,12 @@ function SolicitudesTTHH() {
               </Paper>
             </Grid>
 
-            {/* COLUMNA DERECHA: VISTA PREVIA PROFESIONAL (ESTILO CARTA) */}
             <Grid item xs={12} md={7} lg={8}>
               <Box sx={{ 
                 width: '100%', 
                 display: 'flex', 
                 justifyContent: 'center', 
-                backgroundColor: '#eaeff2', // Fondo gris de "escritorio"
+                backgroundColor: '#eaeff2', 
                 py: 4,
                 borderRadius: 2,
                 overflowY: 'auto',
@@ -250,8 +242,8 @@ function SolicitudesTTHH() {
                   sx={{ 
                     width: '100%', 
                     maxWidth: '800px', 
-                    minHeight: '1050px', // Altura proporcional a A4
-                    padding: { xs: 2, sm: '1.3cm 2cm' }, // Tus márgenes exactos
+                    minHeight: '1050px',
+                    padding: { xs: 2, sm: '1.3cm 2cm' },
                     backgroundColor: '#ffffff', 
                     color: '#2c3e50', 
                     fontFamily: '"Times New Roman", Times, serif', 
@@ -261,7 +253,6 @@ function SolicitudesTTHH() {
                     flexDirection: 'column'
                   }}
                 >
-                  {/* Título interno del visor */}
                   <Typography 
                     variant="caption" 
                     sx={{ 
@@ -292,7 +283,6 @@ function SolicitudesTTHH() {
                               color: #2c3e50;
                             }
                             
-                            /* Adaptamos los estilos que me pasaste para que funcionen dentro del HTML del correo */
                             .carta-body { width: 100%; }
                             .carta-encabezado { font-weight: 600; text-transform: uppercase; text-align: center; margin-bottom: 2rem; }
                             .fecha-derecha { text-align: right; margin-bottom: 1.5rem; }
@@ -301,7 +291,6 @@ function SolicitudesTTHH() {
                             .contenido-justificado { text-align: justify; margin: 1rem 0; word-break: break-word; }
                             .firma-derecha { margin-top: 3rem; }
                             
-                            /* Forzamos a que las tablas del correo ocupen todo el ancho */
                             table { width: 100% !important; border-collapse: collapse; }
                             img { max-width: 150px; height: auto; display: block; margin: 0 auto 1rem auto; }
                           </style>
@@ -326,7 +315,6 @@ function SolicitudesTTHH() {
             </Grid>
           </Grid>
 
-          {/* ADJUNTOS */}
           <Paper elevation={3} sx={{ mt: 4, p: 4, borderRadius: 2, backgroundColor: 'var(--card-bg)' }}>
             <Typography variant="h6" gutterBottom sx={{ fontWeight: 600, color: 'var(--color-text)' }}>
               Adjuntos:
@@ -448,7 +436,9 @@ function SolicitudesTTHH() {
         )}
 
         <ToastContainer position="top-right" autoClose={3500} hideProgressBar={false} theme="colored" />
-        <LoadingModal visible={procesandoAccion || cargando} />
+        
+        {/* EL ARREGLO ESTÁ AQUÍ: Solo muestra el modal cuando se procesa una acción (clic en botón), NO en la carga inicial */}
+        <LoadingModal visible={procesandoAccion} />
       </Container>
     </Box>
   );

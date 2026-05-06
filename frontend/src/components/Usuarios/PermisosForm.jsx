@@ -19,7 +19,7 @@ import {
   Send as SendIcon, 
   Delete as DeleteIcon 
 } from '@mui/icons-material';
-import { toast, ToastContainer } from 'react-toastify';
+import { toast } from 'react-toastify';
 
 import {
   crearPermiso,
@@ -301,7 +301,7 @@ function PermisosForm() {
 
   return (
     <Box sx={{ minHeight: '100vh', backgroundColor: 'var(--color-bg)', py: 4 }}>
-      <ToastContainer position="top-right" autoClose={4000} theme="colored" />
+    
       {loading && <LoadingModal visible={true} />}
 
       <Container maxWidth="xl">

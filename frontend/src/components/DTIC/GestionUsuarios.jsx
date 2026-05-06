@@ -38,7 +38,7 @@ import {
   Add as AddIcon,
   Close as CloseIcon
 } from '@mui/icons-material';
-import { toast, ToastContainer } from 'react-toastify';
+import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
 // === IMPORTACIONES DE VALIDACIÓN (RHF + ZOD) ===
@@ -302,7 +302,6 @@ function GestionUsuarios() {
 
   return (
     <Box sx={{ minHeight: '100vh', py: 4, backgroundColor: 'var(--color-bg)' }}>
-      <ToastContainer position="top-right" autoClose={4000} theme="colored" />
       <LoadingModal visible={cargando} />
 
       <Container maxWidth="xl">

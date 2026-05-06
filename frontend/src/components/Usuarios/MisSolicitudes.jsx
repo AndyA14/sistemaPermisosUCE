@@ -29,7 +29,7 @@ import {
   Description as DescriptionIcon,
   Close as CloseIcon
 } from '@mui/icons-material';
-import { toast, ToastContainer } from 'react-toastify';
+import { toast } from 'react-toastify';
 
 import { obtenerMisPermisos } from '../../services/api';
 import CartaSeguimientoPermiso from '../PlantillasCartas/PlantillasVistasC/CartaSeguimientoPermiso';
@@ -128,7 +128,7 @@ function MisSolicitudes() {
 
   return (
     <Box sx={{ minHeight: '100vh', py: 4, backgroundColor: 'var(--color-bg)' }}>
-      <ToastContainer position="top-right" autoClose={4000} theme="colored" />
+
       {cargando && <LoadingModal visible={true} />}
 
       <Container maxWidth="lg">

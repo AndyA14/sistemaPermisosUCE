@@ -35,7 +35,7 @@ import {
   ThumbUp as ThumbUpIcon,
   ThumbDown as ThumbDownIcon
 } from '@mui/icons-material';
-import { toast, ToastContainer } from 'react-toastify';
+import { toast } from 'react-toastify';
 
 // Importaciones locales
 import {
@@ -45,6 +45,8 @@ import {
   denegarPermiso
 } from '../../services/api.js';
 import LoadingModal from '../LoadingModal';
+// IMPORTAMOS LA CARTA FORMAL A4
+import CartaSeguimientoPermiso from '../PlantillasCartas/PlantillasVistasC/CartaSeguimientoPermiso';
 
 function SolicitudesDirector() {
   const [resultados, setResultados] = useState([]);
@@ -91,7 +93,7 @@ function SolicitudesDirector() {
       setPermisoSeleccionado(null);
       setAdjuntoSeleccionado(null);
       setObservacion('');
-      setCargaVacaciones(false); // Reset de checkbox
+      setCargaVacaciones(false); 
       setError(null);
     } catch (e) {
       toast.error(`❌ Error al autorizar: ${e.message}`, {
@@ -120,7 +122,7 @@ function SolicitudesDirector() {
       setPermisoSeleccionado(null);
       setAdjuntoSeleccionado(null);
       setObservacion('');
-      setCargaVacaciones(false); // Reset de checkbox
+      setCargaVacaciones(false); 
       setError(null);
     } catch (e) {
       toast.error(`⚠️ Error al denegar: ${e.message}`, {
@@ -144,8 +146,7 @@ function SolicitudesDirector() {
   // VISTA DE DETALLE
   // ==========================================
   if (correoSeleccionado) {
-      // === LÓGICA INTELIGENTE DE VACACIONES (NIVEL DIOS) ===
-
+      // === LÓGICA INTELIGENTE DE VACACIONES ===
       // 1. Convertimos TODO el objeto "tipo" a texto. 
       // Así evitamos que la palabra se nos escape si viene en otro campo de la BD.
       const datosTipo = JSON.stringify(permisoSeleccionado?.tipo || {}).toLowerCase() 
@@ -200,22 +201,20 @@ function SolicitudesDirector() {
 
           <Paper elevation={3} sx={{ p: 3, mb: 4, borderRadius: 2, backgroundColor: 'var(--color-header-bg)', color: 'var(--color-header-text)' }}>
             <Typography variant="h5" gutterBottom sx={{ fontWeight: 'bold' }}>
-              {correoSeleccionado.subject}
+              Revisión de Solicitud de Permiso
             </Typography>
             <Grid container spacing={2}>
               <Grid item xs={12} sm={4}>
-                <Typography variant="body2"><strong>De:</strong> {correoSeleccionado.from}</Typography>
+                <Typography variant="body2"><strong>Solicitante:</strong> {permisoSeleccionado?.usuario?.nombres} {permisoSeleccionado?.usuario?.apellidos}</Typography>
               </Grid>
               <Grid item xs={12} sm={4}>
-                <Typography variant="body2"><strong>Para:</strong> {correoSeleccionado.to}</Typography>
-              </Grid>
-              <Grid item xs={12} sm={4}>
-                <Typography variant="body2"><strong>Fecha:</strong> {new Date(correoSeleccionado.date).toLocaleString()}</Typography>
+                <Typography variant="body2"><strong>Fecha de Solicitud:</strong> {permisoSeleccionado?.fecha_solicitud || new Date(correoSeleccionado.date).toLocaleDateString()}</Typography>
               </Grid>
             </Grid>
           </Paper>
 
           <Grid container spacing={4}>
+            {/* COLUMNA IZQUIERDA: DETALLES Y ACCIONES */}
             <Grid item xs={12} md={5} lg={4}>
               <Paper elevation={3} sx={{ p: 4, borderRadius: 2, backgroundColor: 'var(--card-bg)', height: '100%', display: 'flex', flexDirection: 'column' }}>
                 <Typography variant="h6" gutterBottom sx={{ fontWeight: 600, color: 'var(--color-text)', display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -224,35 +223,35 @@ function SolicitudesDirector() {
                 
                 <Stack spacing={2} sx={{ mb: 3, flexGrow: 1 }}>
                   <Typography variant="body1" color="var(--color-text)">
-                    <strong>Tipo:</strong> {permisoSeleccionado.tipo.nombre} {permisoSeleccionado.tipo.sub_tipo ? `(${permisoSeleccionado.tipo.sub_tipo})` : ''}
+                    <strong>Tipo:</strong> {permisoSeleccionado?.tipo?.nombre} {permisoSeleccionado?.tipo?.sub_tipo ? `(${permisoSeleccionado.tipo.sub_tipo})` : ''}
                   </Typography>
                   <Typography variant="body1" color="var(--color-text)">
-                    <strong>Fecha inicio:</strong> {permisoSeleccionado.fecha_inicio}
+                    <strong>Fecha inicio:</strong> {permisoSeleccionado?.fecha_inicio}
                   </Typography>
                   <Typography variant="body1" color="var(--color-text)">
-                    <strong>Fecha fin:</strong> {permisoSeleccionado.fecha_fin || '-'}
+                    <strong>Fecha fin:</strong> {permisoSeleccionado?.fecha_fin || '-'}
                   </Typography>
                   <Box>
                     <Typography variant="body1" color="var(--color-text)"><strong>Descripción:</strong></Typography>
                     <Typography variant="body2" sx={{ color: 'var(--color-text-secondary)', whiteSpace: 'pre-wrap', mt: 0.5, p: 1.5, bgcolor: 'var(--color-bg-secondary)', borderRadius: 1 }}>
-                      {permisoSeleccionado.descripcion}
+                      {permisoSeleccionado?.descripcion}
                     </Typography>
                   </Box>
                   <Typography variant="body1" color="var(--color-text)">
-                    <strong>Estado general:</strong> <em>{permisoSeleccionado.estado_general}</em>
+                    <strong>Estado general:</strong> <em>{permisoSeleccionado?.estado_general}</em>
                   </Typography>
 
                   <Divider sx={{ my: 1 }} />
 
                   <Typography variant="body1" color="var(--color-text)" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                     <strong>Revisado TTHH:</strong> 
-                    {permisoSeleccionado.revisado_tthh 
+                    {permisoSeleccionado?.revisado_tthh 
                       ? <CheckCircleIcon color="success" fontSize="small" /> 
                       : <CancelIcon color="error" fontSize="small" />}
-                    {permisoSeleccionado.revisado_tthh ? 'Sí' : 'No'}
+                    {permisoSeleccionado?.revisado_tthh ? 'Sí' : 'No'}
                   </Typography>
                   
-                  {permisoSeleccionado.revisado_tthh && (
+                  {permisoSeleccionado?.revisado_tthh && (
                     <>
                       <Box>
                         <Typography variant="body1" color="var(--color-text)"><strong>Observación TTHH:</strong></Typography>
@@ -260,9 +259,11 @@ function SolicitudesDirector() {
                           {permisoSeleccionado.observacion_tthh || '(sin observación)'}
                         </Typography>
                       </Box>
-                      <Typography variant="body2" color="var(--color-text-secondary)">
-                        <strong>Fecha de revisión:</strong> {new Date(permisoSeleccionado.fecha_revision_tthh).toLocaleString()}
-                      </Typography>
+                      {permisoSeleccionado.fecha_revision_tthh && (
+                        <Typography variant="body2" color="var(--color-text-secondary)">
+                          <strong>Fecha de revisión:</strong> {new Date(permisoSeleccionado.fecha_revision_tthh).toLocaleString()}
+                        </Typography>
+                      )}
                     </>
                   )}
 
@@ -283,7 +284,6 @@ function SolicitudesDirector() {
                     variant="outlined"
                   />
 
-                  {/* === CHECKBOX CONDICIONAL === */}
                   <FormControlLabel
                     control={
                       <Checkbox 
@@ -344,13 +344,14 @@ function SolicitudesDirector() {
               </Paper>
             </Grid>
 
+            {/* COLUMNA DERECHA: CARTA A4 PROFESIONAL */}
             <Grid item xs={12} md={7} lg={8}>
               <Box
                 sx={{
                   width: '100%',
                   display: 'flex',
                   justifyContent: 'center',
-                  backgroundColor: '#0f172a',
+                  backgroundColor: '#eaeff2',
                   py: 4,
                   borderRadius: 2,
                   overflowY: 'auto',
@@ -362,110 +363,28 @@ function SolicitudesDirector() {
                 <Paper
                   elevation={6}
                   sx={{
-                    width: '210mm',
+                    width: '100%',
+                    maxWidth: '210mm',
                     minHeight: '297mm',
                     backgroundColor: '#ffffff',
                     padding: '20mm',
                     boxSizing: 'border-box',
-                    borderRadius: 2,
-                    position: 'relative',
                     fontFamily: '"Times New Roman", Times, serif',
-                    color: '#1e2a3a'
+                    color: '#1e2a3a',
+                    borderRadius: 1,
+                    '& *': {
+                      fontFamily: '"Times New Roman", Times, serif !important',
+                    }
                   }}
                 >
-                  <Box
-                    sx={{
-                      '& img': {
-                        display: 'block',
-                        margin: '0 auto',
-                        maxWidth: '120px',
-                        mb: 2
-                      },
-                      '& .titulo-institucion': {
-                        textAlign: 'center',
-                        fontWeight: 700,
-                        textTransform: 'uppercase',
-                        fontSize: '14px',
-                        lineHeight: 1.4,
-                        mb: 3
-                      },
-                      '& .fecha': {
-                        textAlign: 'right',
-                        mb: 3,
-                        fontSize: '13px'
-                      },
-                      '& .destinatario': {
-                        textAlign: 'left',
-                        mb: 3,
-                        fontSize: '13px'
-                      },
-                      '& .texto': {
-                        textAlign: 'justify',
-                        fontSize: '13.5px',
-                        lineHeight: 1.6,
-                        mb: 2
-                      },
-                      '& .firma': {
-                        marginTop: '40px',
-                        fontSize: '13px'
-                      }
-                    }}
-                  >
-                    {correoSeleccionado?.html ? (
-                      <div
-                           dangerouslySetInnerHTML={{
-                             __html: `
-                               <style>
-                                 body {
-                                   font-family: "Times New Roman", serif;
-                                   color: #1e2a3a;
-                                   line-height: 1.6;
-                                 }
-                                 img {
-                                   display: block;
-                                   margin: 0 auto;
-                                   max-width: 120px;
-                                 }
-                                 .titulo-institucion {
-                                   text-align: center;
-                                   font-weight: bold;
-                                   text-transform: uppercase;
-                                   font-size: 14px;
-                                   margin-bottom: 20px;
-                                 }
-                                 .fecha {
-                                   text-align: right;
-                                   font-size: 13px;
-                                   margin-bottom: 20px;
-                                 }
-                                 .destinatario {
-                                   font-size: 13px;
-                                   margin-bottom: 20px;
-                                 }
-                                 .texto {
-                                   text-align: justify;
-                                   font-size: 13.5px;
-                                   margin-bottom: 15px;
-                                 }
-                                 .firma {
-                                   margin-top: 40px;
-                                   font-size: 13px;
-                                 }
-                                 table {
-                                   width: 100%;
-                                   border-collapse: collapse;
-                                 }
-                               </style>
-                               ${correoSeleccionado.html}
-                             `
-                            }}
-                      />
-                    ) : (
-                      <div style={{ whiteSpace: 'pre-wrap' }}>
-                        {correoSeleccionado?.text || ''}
-                      </div>
-                    )}
-                  </Box>
+                  {/* INYECTAMOS LA CARTA EN LUGAR DEL CORREO */}
+                  {permisoSeleccionado ? (
+                    <CartaSeguimientoPermiso permiso={permisoSeleccionado} />
+                  ) : (
+                    <Typography align="center" sx={{ mt: 10, color: 'text.secondary' }}>
+                      Cargando documento...
+                    </Typography>
+                  )}
                 </Paper>
               </Box>
             </Grid>
@@ -598,8 +517,7 @@ function SolicitudesDirector() {
           </TableContainer>
         )}
 
-        <ToastContainer position="top-right" autoClose={3500} hideProgressBar={false} theme="colored" />
-        <LoadingModal visible={procesandoAccion || cargando} />
+        <LoadingModal visible={procesandoAccion} />
       </Container>
     </Box>
   );

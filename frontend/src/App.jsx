@@ -29,6 +29,10 @@ import TipoPermisoGestion from './components/DTIC/TipoPermisoGestion';
 import VistaEvidencia from './components/Usuarios/Evidencia/VistaEvidencia';
 import Perfil from './pages/Perfil';
 
+// IMPORTACIÓN DEL CONTENEDOR DE NOTIFICACIONES MAESTRO
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+
 import './App.css';
 
 // Componente para redireccionar según rol después de login
@@ -61,58 +65,74 @@ const ProtectedRoutes = ({ roles, children }) => (
 
 function App() {
   return (
-    <Router>
-      <Routes>
+    <>
+      {/* 
+        CONTENEDOR MAESTRO DE NOTIFICACIONES
+        Puesto aquí atrapa las de TODA la aplicación.
+        El marginTop de 65px hace que baje lo suficiente para no tapar 
+        el botón de perfil ni el modo oscuro de la barra azul.
+      */}
+      <ToastContainer 
+        position="top-right" 
+        autoClose={3500} 
+        hideProgressBar={false} 
+        theme="colored" 
+        style={{ marginTop: '65px' }} 
+      />
 
-        {/* Rutas públicas */}
-        <Route path="/" element={<Navigate to="/inicio" />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/solicitar-reset" element={<SolicitarReset />} />
-        <Route path="/reset-password/:token" element={<ResetPassword />} />
-        <Route path="/inicio" element={<DefaultRoute />} />
-        <Route path="/unauthorized" element={<Unauthorized />} />
+      <Router>
+        <Routes>
 
-        {/* Rutas protegidas dentro del layout principal */}
-        <Route path="/" element={<LayoutPrincipal />}>
+          {/* Rutas públicas */}
+          <Route path="/" element={<Navigate to="/inicio" />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/solicitar-reset" element={<SolicitarReset />} />
+          <Route path="/reset-password/:token" element={<ResetPassword />} />
+          <Route path="/inicio" element={<DefaultRoute />} />
+          <Route path="/unauthorized" element={<Unauthorized />} />
 
-          {/* 🔐 Rutas compartidas para TODOS los roles */}
-          <Route element={<ProtectedRoutes roles={['docente', 'director', 'tthh', 'dti', 'admin']} />}>
-            <Route path="permisos/ver" element={<MisSolicitudes />} />
-            <Route path="permisos/crear" element={<PermisosForm />} />
-            <Route path="perfil" element={<Perfil />} />
-            <Route path="/uploads/documentos/:nombreArchivo" element={<VistaEvidencia />} />
+          {/* Rutas protegidas dentro del layout principal */}
+          <Route path="/" element={<LayoutPrincipal />}>
+
+            {/* 🔐 Rutas compartidas para TODOS los roles */}
+            <Route element={<ProtectedRoutes roles={['docente', 'director', 'tthh', 'dti', 'admin']} />}>
+              <Route path="permisos/ver" element={<MisSolicitudes />} />
+              <Route path="permisos/crear" element={<PermisosForm />} />
+              <Route path="perfil" element={<Perfil />} />
+              <Route path="/uploads/documentos/:nombreArchivo" element={<VistaEvidencia />} />
+            </Route>
+
+            <Route element={<ProtectedRoutes roles={['tthh', 'admin']} />}>
+              <Route path="listado-tthh/dashboard" element={<DashboardTTHH />} />
+              <Route path="listado-tthh/informes" element={<RegistroSolicitudes />} />
+              <Route path="listado-tthh/registro-solicitudes" element={<SolicitudesTTHH />} />
+            </Route>
+
+            <Route element={<ProtectedRoutes roles={['dti', 'admin']} />}>
+              <Route path="dtic/dashboard" element={<DashboardTTHH />} />
+              <Route path="dtic/informes" element={<ReportesDTIC />} />
+              <Route path="dtic/gestion-usuarios" element={<GestionUsuarios />} />
+              <Route path="dtic/tipo-permiso" element={<TipoPermisoGestion />} />
+            </Route>
+
+            {/* 🎯 Rutas por rol específicas */}
+            <Route element={<ProtectedRoutes roles={['director', 'admin']} />}>
+              <Route path="dashboard/resumen" element={<DashboardTTHH />} />
+              <Route path="dashboard/dashboard" element={<SolicitudesDirector />} />
+            </Route>
+
+            
+            {/* Admin (a futuro) */}
+            {/* <Route element={<ProtectedRoutes roles={['admin']} />}>
+              <Route path="admin" element={<AdminPage />} />
+            </Route> */}
           </Route>
 
-          <Route element={<ProtectedRoutes roles={['tthh', 'admin']} />}>
-            <Route path="listado-tthh/dashboard" element={<DashboardTTHH />} />
-            <Route path="listado-tthh/informes" element={<RegistroSolicitudes />} />
-            <Route path="listado-tthh/registro-solicitudes" element={<SolicitudesTTHH />} />
-          </Route>
-
-          <Route element={<ProtectedRoutes roles={['dti', 'admin']} />}>
-            <Route path="dtic/dashboard" element={<DashboardTTHH />} />
-            <Route path="dtic/informes" element={<ReportesDTIC />} />
-            <Route path="dtic/gestion-usuarios" element={<GestionUsuarios />} />
-            <Route path="dtic/tipo-permiso" element={<TipoPermisoGestion />} />
-          </Route>
-
-          {/* 🎯 Rutas por rol específicas */}
-          <Route element={<ProtectedRoutes roles={['director', 'admin']} />}>
-            <Route path="dashboard/resumen" element={<DashboardTTHH />} />
-            <Route path="dashboard/dashboard" element={<SolicitudesDirector />} />
-          </Route>
-
-          
-          {/* Admin (a futuro) */}
-          {/* <Route element={<ProtectedRoutes roles={['admin']} />}>
-            <Route path="admin" element={<AdminPage />} />
-          </Route> */}
-        </Route>
-
-        {/* Página no encontrada */}
-        <Route path="*" element={<NotFound />} />
-      </Routes>
-    </Router>
+          {/* Página no encontrada */}
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+      </Router>
+    </>
   );
 }
 

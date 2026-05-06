@@ -34,6 +34,7 @@ import { toast } from 'react-toastify';
 // Importaciones locales
 import { obtenerCorreosUnificadosTTHH, obtenerUrlDocumento, revisarPermisoPorTTHH } from '../../services/api';
 import LoadingModal from '../LoadingModal';
+import CartaSeguimientoPermiso from '../PlantillasCartas/PlantillasVistasC/CartaSeguimientoPermiso';
 
 function SolicitudesTTHH() {
   const [resultados, setResultados] = useState([]);
@@ -223,7 +224,7 @@ function SolicitudesTTHH() {
               </Paper>
             </Grid>
 
-            {/* COLUMNA DERECHA: VISTA PREVIA (¡AQUÍ ESTÁ LA CORRECCIÓN!) */}
+            {/* COLUMNA DERECHA: CARTA A4 PROFESIONAL */}
             <Grid item xs={12} md={7} lg={8}>
               <Box
                 sx={{
@@ -242,11 +243,11 @@ function SolicitudesTTHH() {
                 <Paper
                   elevation={6}
                   sx={{
-                    width: '100%',           // <-- CORRECCIÓN: Se ajusta al 100% de su contenedor
-                    maxWidth: '210mm',       // <-- CORRECCIÓN: Pero nunca será más ancha que una A4 real
+                    width: '100%',
+                    maxWidth: '210mm',
                     minHeight: '297mm',
                     backgroundColor: '#ffffff',
-                    padding: { xs: 2, sm: '20mm' }, // <-- CORRECCIÓN: Paddings responsivos
+                    padding: { xs: 2, sm: '20mm' },
                     boxSizing: 'border-box',
                     borderRadius: 2,
                     position: 'relative',
@@ -254,150 +255,73 @@ function SolicitudesTTHH() {
                     color: '#1e2a3a'
                   }}
                 >
-                  <Box
-                    sx={{
-                      '& img': {
-                        display: 'block',
-                        margin: '0 auto',
-                        maxWidth: '120px',
-                        mb: 2
-                      },
-                      '& .titulo-institucion': {
-                        textAlign: 'center',
-                        fontWeight: 700,
-                        textTransform: 'uppercase',
-                        fontSize: '14px',
-                        lineHeight: 1.4,
-                        mb: 3
-                      },
-                      '& .fecha': {
-                        textAlign: 'right',
-                        mb: 3,
-                        fontSize: '13px'
-                      },
-                      '& .destinatario': {
-                        textAlign: 'left',
-                        mb: 3,
-                        fontSize: '13px'
-                      },
-                      '& .texto': {
-                        textAlign: 'justify',
-                        fontSize: '13.5px',
-                        lineHeight: 1.6,
-                        mb: 2
-                      },
-                      '& .firma': {
-                        marginTop: '40px',
-                        fontSize: '13px'
-                      }
-                    }}
-                  >
-                    {correoSeleccionado?.html ? (
-                      <div
-                           dangerouslySetInnerHTML={{
-                             __html: `
-                               <style>
-                                 body {
-                                   font-family: "Times New Roman", serif;
-                                   color: #1e2a3a;
-                                   line-height: 1.6;
-                                 }
-                                 img {
-                                   display: block;
-                                   margin: 0 auto;
-                                   max-width: 120px;
-                                 }
-                                 .titulo-institucion {
-                                   text-align: center;
-                                   font-weight: bold;
-                                   text-transform: uppercase;
-                                   font-size: 14px;
-                                   margin-bottom: 20px;
-                                 }
-                                 .fecha {
-                                   text-align: right;
-                                   font-size: 13px;
-                                   margin-bottom: 20px;
-                                 }
-                                 .destinatario {
-                                   font-size: 13px;
-                                   margin-bottom: 20px;
-                                 }
-                                 .texto {
-                                   text-align: justify;
-                                   font-size: 13.5px;
-                                   margin-bottom: 15px;
-                                 }
-                                 .firma {
-                                   margin-top: 40px;
-                                   font-size: 13px;
-                                 }
-                                 table {
-                                   width: 100%;
-                                   border-collapse: collapse;
-                                 }
-                               </style>
-                               ${correoSeleccionado.html}
-                             `
-                            }}
-                      />
-                    ) : (
-                      <div style={{ whiteSpace: 'pre-wrap' }}>
-                        {correoSeleccionado?.text || ''}
-                      </div>
-                    )}
-                  </Box>
+                  {/* INYECTAMOS LA CARTA EN LUGAR DEL HTML DEL CORREO */}
+                  {permisoSeleccionado ? (
+                    <CartaSeguimientoPermiso permiso={permisoSeleccionado} />
+                  ) : (
+                    <Typography align="center" sx={{ mt: 10, color: 'text.secondary' }}>
+                      Cargando documento...
+                    </Typography>
+                  )}
                 </Paper>
               </Box>
             </Grid>
           </Grid>
-
+          {/* ADJUNTOS DESDE LA BASE DE DATOS (ARQUITECTURA UNIFICADA) */}
           <Paper elevation={3} sx={{ mt: 4, p: 4, borderRadius: 2, backgroundColor: 'var(--card-bg)' }}>
             <Typography variant="h6" gutterBottom sx={{ fontWeight: 600, color: 'var(--color-text)' }}>
-              Adjuntos:
+              Evidencia Adjunta:
             </Typography>
             
-            {correoSeleccionado.attachments?.length > 0 ? (
-              <List>
-                {correoSeleccionado.attachments.map((adj, i) => (
-                  <ListItem key={i} disableGutters>
-                    <ListItemIcon>
-                      <AttachmentIcon sx={{ color: 'var(--color-text)' }} />
-                    </ListItemIcon>
-                    <ListItemText 
-                      primary={adj.filename} 
-                      secondary={adj.size || ''} 
-                      primaryTypographyProps={{ color: 'var(--color-text)' }}
-                      secondaryTypographyProps={{ color: 'var(--color-text-secondary)' }}
-                    />
+            {(() => {
+              let rutaEvidencia = null;
+              
+              if (permisoSeleccionado?.documentos && permisoSeleccionado.documentos.length > 0) {
+                // Filtramos archivos autogenerados para quedarnos solo con la evidencia real
+                const doc = permisoSeleccionado.documentos.find(d => d.tipo !== 'Respuesta PDF' && d.tipo !== 'Generado PDF');
+                if (doc) rutaEvidencia = doc.url || doc.ruta || doc.fileUrl;
+              }
+              
+              if (!rutaEvidencia) {
+                 rutaEvidencia = permisoSeleccionado?.documento || permisoSeleccionado?.url_documento;
+              }
+
+              if (rutaEvidencia) {
+                const nombreArchivo = rutaEvidencia.split('/').pop();
+                const urlSegura = obtenerUrlDocumento(nombreArchivo);
+                
+                return (
+                  <Box>
                     <Button 
                       variant="outlined" 
-                      size="small"
-                      onClick={() => setAdjuntoSeleccionado(adj)}
-                      sx={{ ml: 2 }}
+                      startIcon={<AttachmentIcon sx={{ color: 'var(--color-text)' }} />}
+                      // Guardamos tanto el nombre como la URL segura para el preview
+                      onClick={() => setAdjuntoSeleccionado({ filename: nombreArchivo, urlSegura })}
                     >
-                      Ver adjunto
+                      Ver Evidencia del Docente
                     </Button>
-                  </ListItem>
-                ))}
-              </List>
-            ) : (
-              <Typography variant="body2" sx={{ color: 'var(--color-text-secondary)', fontStyle: 'italic' }}>
-                (sin adjuntos)
-              </Typography>
-            )}
+                  </Box>
+                );
+              } else {
+                return (
+                  <Typography variant="body2" sx={{ color: 'var(--color-text-secondary)', fontStyle: 'italic' }}>
+                    (Este permiso no requiere evidencia o el docente no la adjuntó)
+                  </Typography>
+                );
+              }
+            })()}
 
+            {/* VISOR DE PREVIEW ARREGLADO */}
             {adjuntoSeleccionado && (
               <Box sx={{ mt: 4, textAlign: 'center', p: 2, border: '1px solid var(--color-border)', borderRadius: 2, bgcolor: 'var(--color-bg-secondary)' }}>
-                {esPDF ? (
-                  <iframe src={url} width="100%" height="700px" title="Evidencia PDF" style={{ border: 'none', borderRadius: '4px' }} />
+                {adjuntoSeleccionado.urlSegura.toLowerCase().endsWith('.pdf') ? (
+                  <iframe src={adjuntoSeleccionado.urlSegura} width="100%" height="700px" title="Evidencia PDF" style={{ border: 'none', borderRadius: '4px' }} />
                 ) : (
-                  <img src={url} alt="Evidencia" style={{ maxWidth: '100%', maxHeight: '700px', borderRadius: '4px' }} />
+                  <img src={adjuntoSeleccionado.urlSegura} alt="Evidencia" style={{ maxWidth: '100%', maxHeight: '700px', borderRadius: '4px', objectFit: 'contain' }} />
                 )}
               </Box>
             )}
           </Paper>
-
         </Container>
       </Box>
     );

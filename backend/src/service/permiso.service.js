@@ -1,18 +1,20 @@
-// services/permiso.service.js
+// src/service/permiso.service.js
 const { AppDataSource } = require('../config/database');
 const Permiso = require('../entity/Permiso');
 const DocumentoPermiso = require('../entity/DocumentoPermiso');
 const Usuario = require('../entity/Usuario');
 const generarPDF = require('../utils/generarPDF');
-const { enviarCorreoP } = require('./mail.permiso.service');
 const { prepararPermiso, marcarModificacion } = require('../utils/permisoUtils');
-const mailService = require('./mail.service'); // ✅ NUEVO
+const mailService = require('./mail.service'); 
 const path = require('path');
 
 const permisoRepo = AppDataSource.getRepository(Permiso);
 const usuarioRepo = AppDataSource.getRepository(Usuario);
 const docRepo = AppDataSource.getRepository(DocumentoPermiso);
 
+/**
+ * Crear un nuevo permiso y enviar correo inicial con X-Headers.
+ */
 async function crearPermiso({ usuarioId, body, file }) {
   const usuario = await usuarioRepo.findOneBy({ id: usuarioId });
   if (!usuario) throw new Error('Usuario no encontrado');
@@ -58,27 +60,38 @@ async function crearPermiso({ usuarioId, body, file }) {
       path: path.join(process.cwd(), doc.url),
     }));
 
-  try {
-    await enviarCorreoP({
-      subject: `Solicitud de permiso de ${usuario.apellidos} ${usuario.nombres}`,
-      html: htmlCorreo,
-      attachments,
-    });
-  } catch (err) {
-    console.error('Error al enviar correo:', err);
-    throw new Error('No se pudo enviar el correo. Permiso no creado.');
-  }
-
+  // ── GUARDAR PERMISO Y DOCUMENTOS ─────────────────────────
   const nuevoPermiso = await permisoRepo.save(permiso);
 
   for (const doc of documentos) {
     doc.permiso = { id: nuevoPermiso.id };
     await docRepo.save(doc);
   }
-
+    // ── ENVIAR CORREO AL TTHH CON META ─────────────────
+  // ¡ESTE ES EL BLOQUE QUE ESTABA AFUERA! Ahora está protegido.
+  try {
+    await mailService.enviarCorreo({
+      to: process.env.EMAIL_PERMISOS,
+      subject: `Solicitud de permiso de ${usuario.apellidos} ${usuario.nombres}`,
+      html: htmlCorreo,
+      attachments,
+      meta: {
+        permisoId: nuevoPermiso.id,
+        cedula: usuario.ci,
+        aliasDestino: 'permisos',
+      },
+    });
+  } catch (err) {
+    console.error('Error al enviar correo a TTHH:', err);
+    throw new Error('No se pudo enviar el correo a TTHH. Permiso no creado.');
+  }
+  // Ahora sí retornamos después de enviar ambos correos
   return nuevoPermiso;
 }
 
+/**
+ * Modificar el estado de un permiso y notificar al solicitante.
+ */
 async function modificarEstadoPermiso({ permisoId, estado, observacion, username, carga_vacaciones }) {
   const permiso = await permisoRepo.findOne({
     where: { id: permisoId },
@@ -89,7 +102,7 @@ async function modificarEstadoPermiso({ permisoId, estado, observacion, username
     throw new Error('Permiso inválido o ya revisado');
   }
 
-  permiso.estado_general = estado; // Guardará 'autorizado' o 'denegado'
+  permiso.estado_general = estado;
   permiso.carga_vacaciones = carga_vacaciones ?? false;
   permiso.respuesta_director = observacion || null;
   permiso.fecha_revision_director = new Date();
@@ -98,10 +111,9 @@ async function modificarEstadoPermiso({ permisoId, estado, observacion, username
   marcarModificacion(permiso, username);
   const permisoActualizado = await permisoRepo.save(permiso);
 
-  // ✅ NUEVO: Notificar al solicitante el veredicto final
+  // Notificar al solicitante
   try {
-    // Validamos qué campo de correo usa tu entidad Usuario (suele ser 'correo' o 'email')
-    const correoSolicitante = permiso.usuario.correo || permiso.usuario.email; 
+    const correoSolicitante = permiso.usuario.correo || permiso.usuario.email;
     
     if (correoSolicitante) {
       const estadoTexto = estado === 'autorizado' ? 'APROBADA ✅' : 'DENEGADA ❌';
@@ -121,8 +133,14 @@ async function modificarEstadoPermiso({ permisoId, estado, observacion, username
             </ul>
             <p>Puedes revisar los detalles completos ingresando al Sistema de Permisos del IAI.</p>
           </div>
-        `
+        `,
+        meta: {
+          permisoId: permisoActualizado.id,
+          cedula: permiso.usuario.ci,
+          aliasDestino: 'solicitante',
+        },
       });
+
       console.log(`✅ Correo de resolución (${estado}) enviado al solicitante.`);
     } else {
       console.warn('⚠️ No se encontró el correo del solicitante para notificarle.');
@@ -134,6 +152,9 @@ async function modificarEstadoPermiso({ permisoId, estado, observacion, username
   return permisoActualizado;
 }
 
+/**
+ * Editar un permiso pendiente.
+ */
 async function editarPermiso({ permisoId, cambios, username }) {
   const permiso = await permisoRepo.findOne({
     where: { id: permisoId },
@@ -150,22 +171,23 @@ async function editarPermiso({ permisoId, cambios, username }) {
   return await permisoRepo.save(permiso);
 }
 
+/**
+ * Filtrar permisos según usuario y estado.
+ */
 async function filtrarPermisos({ usuario_id, estado_general }) {
   const query = permisoRepo.createQueryBuilder('permiso')
     .leftJoinAndSelect('permiso.usuario', 'usuario')
     .leftJoinAndSelect('permiso.tipo', 'tipo');
 
-  if (usuario_id) {
-    query.andWhere('usuario.id = :usuario_id', { usuario_id: parseInt(usuario_id) });
-  }
-
-  if (estado_general) {
-    query.andWhere('permiso.estado_general = :estado_general', { estado_general });
-  }
+  if (usuario_id) query.andWhere('usuario.id = :usuario_id', { usuario_id: parseInt(usuario_id) });
+  if (estado_general) query.andWhere('permiso.estado_general = :estado_general', { estado_general });
 
   return await query.getMany();
 }
 
+/**
+ * Subir documento adicional a un permiso.
+ */
 async function subirDocumento({ permisoId, fileUrl, tipo }) {
   const doc = docRepo.create({
     permiso: { id: permisoId },
@@ -176,43 +198,33 @@ async function subirDocumento({ permisoId, fileUrl, tipo }) {
   return await docRepo.save(doc);
 }
 
+/**
+ * Revisión de TTHH, envía correo al director con X-Headers.
+ */
 async function revisarPorTTHH({ permisoId, observacion, username }) {
-  // ✅ Incluye documentos para enviar PDF
   const permiso = await permisoRepo.findOne({
     where: { id: permisoId },
     relations: ['usuario', 'tipo', 'documentos'],
   });
 
   if (!permiso) throw new Error('Permiso no encontrado');
-
   if (permiso.estado_general !== 'pendiente') {
     throw new Error('Solo se pueden revisar permisos pendientes');
   }
 
-  permiso.observacion_tthh =
-    typeof observacion === 'string' && observacion.trim() !== ''
-      ? observacion.trim()
-      : null;
-
+  permiso.observacion_tthh = typeof observacion === 'string' && observacion.trim() !== '' ? observacion.trim() : null;
   permiso.revisado_tthh = true;
   permiso.fecha_revision_tthh = new Date();
   permiso.estado_general = 'en_revision';
 
   marcarModificacion(permiso, username);
-
   const permisoActualizado = await permisoRepo.save(permiso);
 
-  // ✅ Preparar adjuntos (incluye PDF)
-  let attachments = [];
-  if (permiso.documentos && permiso.documentos.length > 0) {
-    attachments = permiso.documentos.map(doc => ({
-      filename: path.basename(doc.url),
-      path: path.join(process.cwd(), doc.url),
-    }));
-  }
+  const attachments = permiso.documentos?.map(doc => ({
+    filename: path.basename(doc.url),
+    path: path.join(process.cwd(), doc.url),
+  })) || [];
 
-  // ✅ Enviar correo al Director
-  // ✅ Enviar correo al Director
   try {
     await mailService.enviarCorreo({
       to: process.env.EMAIL_DIRECTOR,
@@ -226,17 +238,24 @@ async function revisarPorTTHH({ permisoId, observacion, username }) {
         <p>Por favor, ingrese al sistema para su aprobación final.</p>
       `,
       attachments,
+      meta: {
+        permisoId: permisoActualizado.id,
+        cedula: permiso.usuario.ci,
+        aliasDestino: 'director',
+      },
     });
 
     console.log('✅ Correo reenviado al Director exitosamente.');
   } catch (error) {
     console.error('❌ Error al notificar al Director:', error);
-    // No se interrumpe el flujo si falla el correo
   }
 
   return permisoActualizado;
 }
 
+/**
+ * Obtener permiso por ID
+ */
 async function obtenerPermisoPorId(id) {
   return await permisoRepo.findOne({
     where: { id },

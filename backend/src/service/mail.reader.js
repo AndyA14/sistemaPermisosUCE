@@ -1,8 +1,11 @@
 // src/service/mail.reader.js
 require('dotenv').config();
 const imaps = require('imap-simple');
-const { simpleParser } = require('mailparser');
 
+/**
+ * Lee correos filtrados por alias usando IMAP.
+ * Optimizado: solo descarga headers (≈2KB por correo, sin adjuntos).
+ */
 async function leerCorreosPorAlias(alias) {
   const aliasCompleto = `${process.env.EMAIL_ADDRESS.split('@')[0]}+${alias}@gmail.com`;
 
@@ -26,83 +29,88 @@ async function leerCorreosPorAlias(alias) {
     fechaLimite.setDate(fechaLimite.getDate() - 15);
 
     const uids = await new Promise((resolve, reject) => {
-      connection.imap.search([['TO', aliasCompleto], ['SINCE', fechaLimite]], (err, results) => {
-        if (err) return reject(err);
-        resolve(results);
-      });
+      connection.imap.search(
+        [['TO', aliasCompleto], ['SINCE', fechaLimite]],
+        (err, results) => {
+          if (err) return reject(err);
+          resolve(results || []);
+        }
+      );
     });
 
-    if (!uids || uids.length === 0) return [];
+    if (!uids.length) return [];
 
-    const ultimos5Uids = uids.slice(-5);
+    // Tomamos los últimos 20 correos (ligero porque solo leemos headers)
+    const targetUids = uids.slice(-20);
 
-    // ==========================================
-    // FASE 2: DESCARGA ULTRA-LIGERA (SOLO TEXTO)
-    // ==========================================
-    // ==========================================
-    // FASE 2: DESCARGA NATIVA
-    // ==========================================
-    const messagesDetallados = await new Promise((resolve, reject) => {
-      const fetchOptions = { bodies: [''], struct: true, markSeen: false };
-      const f = connection.imap.fetch(ultimos5Uids, fetchOptions);
-      
-      const msgs = [];
-      f.on('message', (msg, seqno) => {
-        const message = { attributes: null, parts: [] };
-        
-        msg.on('body', (stream, info) => {
-          let bodyBuffer = Buffer.alloc(0);
-          stream.on('data', (chunk) => {
-            bodyBuffer = Buffer.concat([bodyBuffer, chunk]); 
+    // ── FETCH ULTRALIGERO: SOLO HEADERS ─────────────────────────────
+    const mensajes = await new Promise((resolve, reject) => {
+      const fetchOpts = {
+        bodies: ['HEADER.FIELDS (FROM TO DATE SUBJECT X-PERMISO-ID X-CEDULA X-ALIAS-DEST)'],
+        markSeen: false,
+      };
+
+      const f = connection.imap.fetch(targetUids, fetchOpts);
+      const resultado = [];
+
+      f.on('message', (msg) => {
+        let uid = null;
+        let rawHdr = '';
+
+        msg.on('attributes', attrs => { uid = attrs.uid; });
+
+        msg.on('body', (stream) => {
+          stream.on('data', chunk => {
+            rawHdr += chunk.toString('utf-8');
           });
+
           stream.on('end', () => {
-            message.parts.push({ which: info.which, size: info.size, body: bodyBuffer });
+            resultado.push({ uid, rawHdr });
           });
         });
-        
-        msg.on('attributes', attrs => message.attributes = attrs);
-        msg.on('end', () => msgs.push(message));
       });
-      
+
       f.once('error', reject);
-      f.once('end', () => resolve(msgs));
+      f.once('end', () => resolve(resultado));
     });
 
-    const correos = await Promise.all(
-      messagesDetallados.map(async (msg) => {
-        const rawPart = msg.parts.find(p => p.which === '');
-        if (!rawPart || !rawPart.body) return null;
+    // ── PARSEO MANUAL DE HEADERS (sin mailparser) ────────────────────
+    const correos = mensajes.map(({ uid, rawHdr }) => {
 
-        // === OPTIMIZACIÓN NIVEL DIOS (RESTAURADA) ===
-        // Evitamos que el parser gaste recursos en buscar adjuntos o links
-        const parsed = await simpleParser(rawPart.body, {
-          skipHtmlToText: true,
-          skipTextToHtml: true,
-          skipTextLinks: true,
-          skipImageLinks: true,
-        });
+      const get = (campo) => {
+        const match = rawHdr.match(
+          new RegExp(`^${campo}:\\s*(.+?)(?=\\r?\\n[^\\s]|$)`, 'im')
+        );
+        return match ? match[1].trim() : '';
+      };
 
-        const adjuntos = parsed.attachments ? parsed.attachments.map(att => ({
-          filename: att.filename,
-          contentType: att.contentType,
-          size: `${(att.size / 1024).toFixed(1)} KB`,
-        })) : [];
+      return {
+        id: uid,
+        from: get('From') || '(sin remitente)',
+        to: get('To') || '(sin destinatario)',
+        subject: get('Subject') || '(sin asunto)',
+        date: new Date(get('Date') || Date.now()),
 
-        return {
-          id: msg.attributes.uid,
-          from: parsed.from?.text || '(sin remitente)',
-          to: parsed.to?.text || '(sin destinatario)',
-          subject: parsed.subject || '(sin asunto)',
-          date: parsed.date || new Date(),
-          text: parsed.text || '',
-          html: parsed.html || '',
-          attachments: adjuntos,
-        };
-      })
-    );
+        // ─── DATA CRÍTICA DESDE X-HEADERS ────────────────────────────
+        permisoId: parseInt(get('X-Permiso-ID')) || null,
+        cedula: get('X-Cedula') || null,
+        alias: get('X-Alias-Dest') || alias,
 
-    return correos.filter(c => c !== null);
+        // Ya no descargamos cuerpo
+        text: '',
+        html: '',
+        attachments: [],
+      };
 
+    })
+    // Filtramos solo correos que ya usan el nuevo sistema
+    .filter(c => c.cedula);
+
+    return correos;
+
+  } catch (error) {
+    console.error('❌ Error leyendo correos por IMAP:', error);
+    throw error;
   } finally {
     await connection.end();
   }

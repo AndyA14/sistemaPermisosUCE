@@ -22,7 +22,7 @@ import {
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { toast, ToastContainer } from 'react-toastify'; // Agregamos Toastify para mensajes elegantes
+import { toast } from 'react-toastify'; // Agregamos Toastify para mensajes elegantes
 import 'react-toastify/dist/ReactToastify.css';
 
 import { resetearContrasena } from '../services/api';
@@ -99,7 +99,8 @@ function ResetPassword() {
         padding: 2,
       }}
     >
-      <ToastContainer position="top-right" autoClose={3000} theme="colored" />
+      
+
       <Container maxWidth="xs">
         <Paper
           elevation={6}

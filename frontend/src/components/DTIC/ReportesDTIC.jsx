@@ -32,7 +32,7 @@ import {
   PersonOutline as PersonActiveIcon,
   Close as CloseIcon
 } from '@mui/icons-material';
-import { toast, ToastContainer } from 'react-toastify';
+import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
 // Importaciones locales
@@ -271,7 +271,7 @@ function ReportesDTIC() {
 
   return (
     <Box sx={{ minHeight: '100vh', py: 4, backgroundColor: 'var(--color-bg)' }}>
-      <ToastContainer position="top-right" autoClose={3500} theme="colored" />
+      
       {cargando && <LoadingModal visible={true} />}
 
       <Container maxWidth="xl">

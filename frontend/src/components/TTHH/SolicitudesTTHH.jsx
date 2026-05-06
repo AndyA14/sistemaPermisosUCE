@@ -29,7 +29,7 @@ import {
   CheckCircleOutline as CheckCircleIcon,
   CancelOutlined as CancelIcon
 } from '@mui/icons-material';
-import { toast, ToastContainer } from 'react-toastify';
+import { toast } from 'react-toastify';
 
 // Importaciones locales
 import { obtenerCorreosUnificadosTTHH, obtenerUrlDocumento, revisarPermisoPorTTHH } from '../../services/api';
@@ -125,7 +125,7 @@ function SolicitudesTTHH() {
               setObservacion('');
               setError(null);
             }}
-            sx={{ mb: 3, color: 'var(--color-text-secondary)' }}
+            sx={{ mb: 3, color: 'var(--color-text-secondary)', textTransform: 'none' }}
           >
             Volver a la lista
           </Button>
@@ -223,14 +223,14 @@ function SolicitudesTTHH() {
               </Paper>
             </Grid>
 
-            {/* COLUMNA DERECHA: VISTA PREVIA IDÉNTICA AL DIRECTOR */}
+            {/* COLUMNA DERECHA: VISTA PREVIA (¡AQUÍ ESTÁ LA CORRECCIÓN!) */}
             <Grid item xs={12} md={7} lg={8}>
               <Box
                 sx={{
                   width: '100%',
                   display: 'flex',
                   justifyContent: 'center',
-                  backgroundColor: '#eaeff2', // Fondo oscuro/gris para resaltar la hoja
+                  backgroundColor: '#eaeff2',
                   py: 4,
                   borderRadius: 2,
                   overflowY: 'auto',
@@ -242,10 +242,11 @@ function SolicitudesTTHH() {
                 <Paper
                   elevation={6}
                   sx={{
-                    width: '210mm', // Ancho estricto A4
+                    width: '100%',           // <-- CORRECCIÓN: Se ajusta al 100% de su contenedor
+                    maxWidth: '210mm',       // <-- CORRECCIÓN: Pero nunca será más ancha que una A4 real
                     minHeight: '297mm',
                     backgroundColor: '#ffffff',
-                    padding: '20mm',
+                    padding: { xs: 2, sm: '20mm' }, // <-- CORRECCIÓN: Paddings responsivos
                     boxSizing: 'border-box',
                     borderRadius: 2,
                     position: 'relative',
@@ -470,8 +471,6 @@ function SolicitudesTTHH() {
             </Table>
           </TableContainer>
         )}
-
-        <ToastContainer position="top-right" autoClose={3500} hideProgressBar={false} theme="colored" />
         <LoadingModal visible={procesandoAccion} />
       </Container>
     </Box>

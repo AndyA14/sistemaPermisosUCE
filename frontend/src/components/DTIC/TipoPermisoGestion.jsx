@@ -6,7 +6,7 @@ import {
   eliminarTipoPermiso,
 } from '../../services/api';
 import LoadingModal from '../../components/LoadingModal';
-import { toast, ToastContainer } from 'react-toastify';
+import { toast } from 'react-toastify';
 
 // 📦 Importaciones de Material UI
 import {
@@ -114,7 +114,6 @@ function TipoPermisoGestion() {
 
   return (
     <Container maxWidth="lg" sx={{ py: 4, minHeight: 'calc(100vh - 80px)' }}>
-      <ToastContainer position="top-right" autoClose={3500} theme="colored" />
       <LoadingModal visible={loading} />
 
       {/* 🎯 Header con estadísticas */}

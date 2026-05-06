@@ -16,7 +16,7 @@ import {
   Person as PersonIcon, 
   Lock as LockIcon 
 } from '@mui/icons-material';
-import { ToastContainer, toast } from 'react-toastify';
+import { toast } from 'react-toastify';
 
 // === IMPORTACIONES DE VALIDACIÓN (RHF + ZOD) ===
 import { useForm, Controller } from 'react-hook-form';
@@ -231,7 +231,7 @@ function Login() {
         </Paper>
       </Container>
 
-      <ToastContainer />
+      
       <LoadingModal visible={loading} />
     </Box>
   );

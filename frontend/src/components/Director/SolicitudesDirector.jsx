@@ -35,7 +35,7 @@ import {
   ThumbUp as ThumbUpIcon,
   ThumbDown as ThumbDownIcon
 } from '@mui/icons-material';
-import { toast, ToastContainer } from 'react-toastify';
+import { toast } from 'react-toastify';
 
 // Importaciones locales
 import {
@@ -479,7 +479,6 @@ function SolicitudesDirector() {
           </TableContainer>
         )}
 
-        <ToastContainer position="top-right" autoClose={3500} hideProgressBar={false} theme="colored" />
         <LoadingModal visible={procesandoAccion} />
       </Container>
     </Box>

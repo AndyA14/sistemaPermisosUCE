@@ -252,12 +252,13 @@
   --color-bg-overlay: rgba(15, 23, 42, 0.8);
   --color-bg-frosted: rgba(30, 41, 59, 0.8);
   
-  --color-text-primary: var(--color-slate-100);
-  --color-text-secondary: var(--color-slate-400);
-  --color-text-tertiary: var(--color-slate-500);
-  --color-text-inverse: var(--color-slate-900);
-  --color-text-disabled: var(--color-slate-600);
-  --color-text-accent: var(--color-sky-400);
+  /* 👇🏼 ESTA ES LA MAGIA ARREGLADA (Ahora sí son colores claros) 👇🏼 */
+  --color-text-primary: #f1f5f9;      /* Blanco humo */
+  --color-text-secondary: #cbd5e1;    /* Gris claro */
+  --color-text-tertiary: #94a3b8;     /* Gris medio */
+  --color-text-inverse: #0f172a;      /* Oscuro (para botones claros) */
+  --color-text-disabled: #64748b;     
+  --color-text-accent: #38bdf8;       /* Celeste brillante */
   
   --color-border-primary: var(--color-slate-700);
   --color-border-secondary: var(--color-slate-600);

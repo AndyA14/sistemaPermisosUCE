@@ -4,7 +4,7 @@ import {
   LineChart, Line
 } from 'recharts';
 import { Box, Typography, Paper } from '@mui/material';
-import { toast, ToastContainer } from 'react-toastify';
+import { toast } from 'react-toastify';
 
 // Importaciones locales
 import LoadingModal from '../../components/LoadingModal.jsx';
@@ -207,7 +207,7 @@ const DashboardTTHH = () => {
 
   return (
     <>
-      <ToastContainer position="top-right" autoClose={4000} theme="colored" />
+      
       {loading && <LoadingModal visible={true} />}
 
       <Box

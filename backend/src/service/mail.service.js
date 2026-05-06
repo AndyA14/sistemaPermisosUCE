@@ -11,8 +11,16 @@ sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
 /**
  * Envía un correo electrónico usando SendGrid.
+ * Ahora incluye X-Headers para lectura rápida por IMAP.
  */
-async function enviarCorreo({ to, subject, text = '', html = '', attachments = [] }) {
+async function enviarCorreo({
+  to,
+  subject,
+  text = '',
+  html = '',
+  attachments = [],
+  meta = {} // ← NUEVO: metadata para headers
+}) {
   try {
     if (!to) throw new Error("No se proporcionó destinatario");
 
@@ -24,23 +32,19 @@ async function enviarCorreo({ to, subject, text = '', html = '', attachments = [
           return null;
         }
 
-        const content = fs.readFileSync(att.path).toString('base64');
-
         return {
-          content,
+          content: fs.readFileSync(att.path).toString('base64'),
           filename: att.filename,
           type: 'application/pdf',
           disposition: 'attachment',
         };
       })
-      .filter(att => att !== null);
+      .filter(Boolean);
 
     // === OPTIMIZACIÓN BLINDADA ===
-    // Convertimos a string sin importar qué formato loco use SendGrid
     const destinatariosStr =
       (String(to) + JSON.stringify(to)).toLowerCase();
 
-    // Validamos con los alias puros
     const destinoEsSistema =
       destinatariosStr.includes('+director') ||
       destinatariosStr.includes('+tthh') ||
@@ -56,8 +60,16 @@ async function enviarCorreo({ to, subject, text = '', html = '', attachments = [
       text: text || 'Mensaje del Sistema de Gestión de Permisos',
       html: html || text,
 
-      // EL CORTE DEFINITIVO: Si va al sistema, el arreglo se vacía.
+      // Si va al sistema, no enviamos adjuntos
       attachments: destinoEsSistema ? [] : formattedAttachments,
+
+      // ─── SOLUCIÓN A: X-HEADERS ─────────────────────────────
+      // Estos headers viajan intactos y pueden leerse vía IMAP sin descargar el body
+      headers: {
+        'X-Permiso-ID': String(meta.permisoId   || ''),
+        'X-Cedula':     String(meta.cedula      || ''),
+        'X-Alias-Dest': String(meta.aliasDestino || ''), // director | permisos | tthh
+      },
     };
 
     const response = await sgMail.send(msg);
@@ -76,15 +88,24 @@ async function enviarCorreo({ to, subject, text = '', html = '', attachments = [
   }
 }
 
+/**
+ * Obtiene correos por alias (lector IMAP)
+ */
 async function obtenerCorreosPorAlias(alias) {
   if (!alias) throw new Error('Alias es requerido');
   return await leerCorreosPorAlias(alias);
 }
 
+/**
+ * Correos unificados para TTHH
+ */
 async function obtenerCorreosUnificadosTTHH() {
   return await procesarCorreosYPermisosPorRol('permisos', false);
 }
 
+/**
+ * Correos unificados para Director
+ */
 async function obtenerCorreosUnificadosDirector() {
   return await procesarCorreosYPermisosPorRol('director', true);
 }

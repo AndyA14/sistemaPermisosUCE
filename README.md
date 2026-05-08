@@ -1,44 +1,44 @@
-#  Sistema de Gestión de Permisos Docentes - IAI UCE
+# 🎓 Sistema de Gestión de Permisos Docentes - IAI UCE
 
-##  Descripción del Proyecto
+## 📝 Descripción del Proyecto
 
 Sistema web completo para la gestión de permisos docentes del Instituto Académico de Idiomas de la Universidad Central del Ecuador. Permite a los docentes solicitar permisos, gestionar aprobaciones y generar cartas formales automáticamente.
 
-##  Características Principales
+## ✨ Características Principales
 
-###  Funcionalidades del Sistema
+### 🛠️ Funcionalidades del Sistema
 
 - **Gestión de Permisos**: Solicitar diferentes tipos de permisos (Falta, Atraso, Sin Timbrar, Otros)
-- **Flujo de Aprobación**: Sistema multi-nivel con validación por TTHH y Director
+- **Flujo de Aprobación**: Sistema multi-nivel con validación estructurada (Docente → TTHH → Director)
 - **Generación de Cartas**: Creación automática de cartas formales con plantillas personalizadas
-- **Gestión de Evidencias**: Adjuntar documentos de soporte (PDF, imágenes)
-- **Notificaciones por Email**: Sistema de notificaciones automáticas
-- **Panel de Control**: Dashboard con estadísticas y reportes
+- **Gestión de Evidencias**: Almacenamiento y previsualización local de documentos de soporte (PDF, imágenes)
+- **Notificaciones por Email**: Sistema de notificaciones automáticas y ligeras
+- **Panel de Control**: Dashboard con estadísticas y reportes de solicitudes
 - **Gestión de Usuarios**: Administración de roles y permisos
 - **Seguridad**: Autenticación JWT y control de acceso basado en roles
 
-###  Roles del Sistema
+### 👥 Roles del Sistema
 
 - **Docentes**: Crear y gestionar sus solicitudes de permiso
-- **TTHH (Talento Humano)**: Revisar y procesar solicitudes
-- **Director**: Aprobación final de permisos
+- **TTHH (Talento Humano)**: Revisar, validar evidencias y procesar solicitudes iniciales
+- **Director**: Aprobación final y emisión de resoluciones
 - **DTIC**: Administración del sistema y gestión de usuarios
 
-##  Arquitectura Tecnológica
+## 🏗️ Arquitectura Tecnológica
 
-###  Backend (Node.js + Express)
+### ⚙️ Backend (Node.js + Express)
 - **Framework**: Express.js 5.1.0
 - **Base de Datos**: PostgreSQL con TypeORM 0.3.24
 - **Autenticación**: JWT con bcrypt
-- **Email**: Nodemailer 7.0.3 con IMAP/SMTP
+- **Email/Notificaciones**: @sendgrid/mail con integración IMAP (imap-simple)
 - **Generación PDF**: PDF-lib 1.17.1
-- **Web Scraping**: Puppeteer 24.10.1 para procesamiento de correos
+- **Web Scraping**: Puppeteer 24.10.1 para procesamiento y generación de documentos
 - **Documentación**: Swagger/OpenAPI con swagger-jsdoc y swagger-ui-express
 - **Fechas**: Luxon 3.6.1
 - **Archivos**: Multer 2.0.1
 - **Compresión**: Archiver 7.0.1
 
-###  Frontend (React + Vite)
+### 💻 Frontend (React + Vite)
 - **Framework**: React 19 con Vite
 - **Routing**: React Router DOM
 - **UI Components**: Material-UI + Emotion
@@ -50,11 +50,10 @@ Sistema web completo para la gestión de permisos docentes del Instituto Académ
 - **Iconos**: React Icons
 - **Estilos**: CSS custom con variables CSS
 
-###  Infraestructura
+### 🐳 Infraestructura
 - **Contenerización**: Docker + Docker Compose
 - **Base de Datos**: PostgreSQL
 - **Servidor Web**: Nginx (producción)
-
 ##  Estructura del Proyecto
 
 ```
@@ -129,15 +128,15 @@ docker-compose.yml    # Configuración de servicios
 README.md            # Documentación del proyecto
 ```
 
-##  Instalación y Configuración
+## 🚀 Instalación y Configuración
 
-###  Requisitos Previos
+### 📋 Requisitos Previos
 
 - Docker y Docker Compose
 - Node.js 18+ (para desarrollo local)
 - PostgreSQL (para desarrollo local)
 
-###  Configuración con Docker (Recomendado)
+### 🐳 Configuración con Docker (Recomendado)
 
 #### 1. Variables de Entorno - Backend
 
@@ -158,7 +157,7 @@ DB_NAME=iai_sistemapermisos
 JWT_SECRET=586E3272357538782F413F4428472B4B6250655368566B597033733676397924
 
 # URLs
-URL_FRONTEND=http://192.168.0.179
+URL_FRONTEND=[http://192.168.0.179](http://192.168.0.179)
 
 # Cuentas de correo (configurar con datos reales)
 EMAIL_ADDRESS=parangaricutimiricuaro465879@gmail.com
@@ -166,16 +165,16 @@ EMAIL_PERMISOS=parangaricutimiricuaro465879+permisos@gmail.com
 EMAIL_DIRECTOR=parangaricutimiricuaro465879+director@gmail.com
 EMAIL_SOPORTE=parangaricutimiricuaro465879+soporte@gmail.com
 
-# Autenticación Gmail
+# Integración API SendGrid
+SENDGRID_API_KEY=tu_api_key_aqui
+SENDGRID_SENDER=tu_correo_verificado@dominio.com
+
+# Autenticación Gmail (Para Lector IMAP)
 EMAIL_PASSWORD=sgvx dfhz svnj rmzj
 
-# Configuración IMAP/SMTP
+# Configuración IMAP
 IMAP_HOST=imap.gmail.com
 IMAP_PORT=993
-IMAP_SECURE="true"
-SMTP_HOST=smtp.gmail.com
-SMTP_PORT=587
-SMTP_SECURE="false"
 ```
 
 #### 2. Variables de Entorno - Frontend
@@ -521,7 +520,7 @@ npm run lint
 
 ---
 
-**Versión**: 1.0.0  
+**Versión**: 2.0.0  
 **Última Actualización**: Abril 2026  
 **Desarrollado por**: Equipo DTIC - IAI UCE  
 **Estado**: Producción activa  

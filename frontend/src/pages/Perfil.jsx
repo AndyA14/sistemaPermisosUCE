@@ -16,7 +16,7 @@ import {
   Alert,
   Badge,
   Container,
-  useTheme // <-- Importamos useTheme de MUI
+  useTheme
 } from '@mui/material';
 import {
   PersonOutline,
@@ -39,14 +39,14 @@ const ROLES_LABELS = {
   admin: 'Administrador del Sistema',
   director: 'Director del Instituto Académico de Idiomas',
   tthh: 'Departamento de Talento Humano',
-  dti: 'Departamento de Tecnología de la Información',
+  dtic: 'Departamento de Tecnología de la Información', // Corregido de 'dti' a 'dtic' según tu backend
 };
 
 function Perfil() {
   const [usuario, setUsuario] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const theme = useTheme(); // <-- Usamos el tema actual
+  const theme = useTheme();
 
   // Estado modal cambiar contraseña
   const [showModal, setShowModal] = useState(false);
@@ -61,9 +61,11 @@ function Perfil() {
   const [showNewPass, setShowNewPass] = useState(false);
   const [showConfirmPass, setShowConfirmPass] = useState(false);
 
-  // --- Estados para editar nombre de usuario ---
+  // --- Estados para Editar Perfil ---
   const [showEditModal, setShowEditModal] = useState(false);
   const [editUsername, setEditUsername] = useState('');
+  const [editTelefono, setEditTelefono] = useState('');
+  const [editDireccion, setEditDireccion] = useState('');
   const [editError, setEditError] = useState('');
   const [updatingProfile, setUpdatingProfile] = useState(false);
 
@@ -108,25 +110,41 @@ function Perfil() {
     }
   };
 
-  const handleUpdateUsername = async (e) => {
+  const handleUpdateProfile = async (e) => {
     e.preventDefault();
     setEditError('');
     if (!editUsername.trim()) return;
     
-    // Si no cambió nada, solo cerramos
-    if (editUsername === usuario.username) {
+    // Si no cambió absolutamente nada, solo cerramos
+    if (editUsername === usuario.username && editTelefono === (usuario.telefono || '') && editDireccion === (usuario.direccion || '')) {
       setShowEditModal(false);
       return;
     }
 
     try {
       setUpdatingProfile(true);
-      await actualizarUsuario(usuario.id, { username: editUsername });
       
-      // Como cambió su credencial, cerramos sesión para que el sistema le dé un Token nuevo
-      alert('Nombre de usuario actualizado con éxito. Por seguridad, debe iniciar sesión nuevamente.');
-      localStorage.removeItem('token'); // Ajusta esto si guardas tu token con otro nombre
-      window.location.href = '/login'; 
+      // Enviamos la petición al backend con los datos permitidos
+      await actualizarUsuario(usuario.id, { 
+        username: editUsername,
+        telefono: editTelefono,
+        direccion: editDireccion
+      });
+      
+      // Si el usuario cambió su 'username', sus credenciales cambiaron y debe volver a loguearse
+      if (editUsername !== usuario.username) {
+        alert('Nombre de usuario actualizado con éxito. Por seguridad, debe iniciar sesión nuevamente.');
+        localStorage.removeItem('token'); 
+        window.location.href = '/login'; 
+      } else {
+        // Si solo cambió el teléfono o dirección, actualizamos la pantalla sin sacarlo del sistema
+        setUsuario({
+          ...usuario,
+          telefono: editTelefono,
+          direccion: editDireccion
+        });
+        setShowEditModal(false);
+      }
       
     } catch (err) {
       setEditError(err.message || 'Error al actualizar el perfil');
@@ -200,7 +218,6 @@ function Perfil() {
     <Box sx={{ 
       minHeight: '100vh', 
       py: 4, 
-      // Fondo global dinámico
       background: theme.palette.mode === 'dark' ? 'var(--color-bg-primary)' : 'linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)' 
     }}>
       <LoadingModal visible={loading || changingPass} />
@@ -224,7 +241,6 @@ function Perfil() {
             {/* Header del Perfil */}
             <Box
               sx={{
-                // Header dinámico
                 background: theme.palette.mode === 'dark' 
                   ? 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)' 
                   : 'linear-gradient(135deg, #0ea5e9 0%, #2980b9 100%)',
@@ -303,7 +319,10 @@ function Perfil() {
                   </Typography>
                   <IconButton 
                     onClick={() => {
-                      setEditUsername(usuario.username); // Precargar el usuario actual
+                      // Precargamos TODOS los datos al abrir el modal
+                      setEditUsername(usuario.username);
+                      setEditTelefono(usuario.telefono || '');
+                      setEditDireccion(usuario.direccion || '');
                       setShowEditModal(true);
                     }} 
                     sx={{ color: 'var(--color-text)', '&:hover': { bgcolor: 'var(--btn-crear-bg)', color: 'white' } }}
@@ -446,28 +465,70 @@ function Perfil() {
           </Button>
         </DialogActions>
       </Dialog>
-      {/* Dialog para Cambiar Nombre de Usuario */}
-      <Dialog open={showEditModal} onClose={() => setShowEditModal(false)} PaperProps={{ sx: { borderRadius: 4, width: '100%', maxWidth: 400, bgcolor: 'var(--color-bg)' } }}>
+
+      {/* Dialog para Editar Datos del Perfil */}
+      <Dialog open={showEditModal} onClose={() => setShowEditModal(false)} PaperProps={{ sx: { borderRadius: 4, width: '100%', maxWidth: 500, bgcolor: 'var(--color-bg)' } }}>
         <DialogTitle sx={{ borderBottom: '1px solid var(--color-border)', color: 'var(--color-text)', fontWeight: 600 }}>
-          Cambiar Nombre de Usuario
+          Editar Información Personal
         </DialogTitle>
         <DialogContent sx={{ mt: 2 }}>
           {editError && <Alert severity="error" sx={{ mb: 2 }}>{editError}</Alert>}
           <Typography variant="body2" sx={{ color: 'var(--color-text-secondary)', mb: 3 }}>
-            Este es el nombre con el que inicias sesión en el sistema. Puedes cambiarlo por tu identificador institucional habitual.
+            Los campos atenuados son administrados institucionalmente y no pueden ser modificados.
           </Typography>
 
-          <Box component="form" id="username-form" onSubmit={handleUpdateUsername} sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-            <TextField
-              label="Nombre de Usuario"
-              fullWidth
-              required
-              value={editUsername}
-              onChange={(e) => setEditUsername(e.target.value.toLowerCase())} // Forzar minúsculas
-              disabled={updatingProfile}
-              InputProps={{ sx: { borderRadius: 2 } }}
-            />
-          </Box>
+          {usuario && (
+            <Box component="form" id="profile-form" onSubmit={handleUpdateProfile} sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
+              
+              {/* === CAMPOS BLOQUEADOS (SOLO LECTURA) === */}
+              <Grid container spacing={2}>
+                <Grid item xs={12} sm={6}>
+                  <TextField label="Cédula de Identidad" fullWidth disabled value={usuario.ci || ''} InputProps={{ sx: { borderRadius: 2 } }} />
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <TextField label="Rol Asignado" fullWidth disabled value={ROLES_LABELS[usuario.rol] || usuario.rol} InputProps={{ sx: { borderRadius: 2 } }} />
+                </Grid>
+              </Grid>
+              
+              <TextField label="Nombres y Apellidos" fullWidth disabled value={`${usuario.nombres} ${usuario.apellidos}`} InputProps={{ sx: { borderRadius: 2 } }} />
+              <TextField label="Correo Electrónico" fullWidth disabled value={usuario.correo} InputProps={{ sx: { borderRadius: 2 } }} />
+
+              {/* === CAMPOS EDITABLES === */}
+              <TextField
+                label="Nombre de Usuario (Login)"
+                fullWidth
+                required
+                value={editUsername}
+                onChange={(e) => setEditUsername(e.target.value.toLowerCase())}
+                disabled={updatingProfile}
+                InputProps={{ sx: { borderRadius: 2 } }}
+                helperText="Si cambias tu nombre de usuario, deberás iniciar sesión nuevamente."
+              />
+              
+              <TextField
+                label="Teléfono"
+                fullWidth
+                value={editTelefono}
+                onChange={(e) => setEditTelefono(e.target.value)}
+                disabled={updatingProfile}
+                InputProps={{ sx: { borderRadius: 2 } }}
+                placeholder="Ej: 0991234567"
+              />
+              
+              <TextField
+                label="Dirección de Domicilio"
+                fullWidth
+                multiline
+                rows={2}
+                value={editDireccion}
+                onChange={(e) => setEditDireccion(e.target.value)}
+                disabled={updatingProfile}
+                InputProps={{ sx: { borderRadius: 2 } }}
+                placeholder="Ingresa tu dirección completa..."
+              />
+            </Box>
+          )}
+
         </DialogContent>
         <DialogActions sx={{ p: 3, pt: 0 }}>
           <Button onClick={() => setShowEditModal(false)} sx={{ color: 'var(--color-text)' }} disabled={updatingProfile}>
@@ -475,7 +536,7 @@ function Perfil() {
           </Button>
           <Button 
             type="submit" 
-            form="username-form" 
+            form="profile-form" 
             variant="contained" 
             disabled={updatingProfile}
             sx={{ 
@@ -483,7 +544,7 @@ function Perfil() {
               background: theme.palette.mode === 'dark' ? 'linear-gradient(135deg, #0284c7, #0ea5e9)' : 'linear-gradient(135deg, #0ea5e9, #2980b9)'
             }}
           >
-            {updatingProfile ? 'Guardando...' : 'Guardar y Reiniciar'}
+            {updatingProfile ? 'Guardando...' : 'Guardar Cambios'}
           </Button>
         </DialogActions>
       </Dialog>

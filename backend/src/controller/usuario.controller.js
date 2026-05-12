@@ -93,23 +93,38 @@ const crearUsuario = async (req, res) => {
 const actualizarUsuario = async (req, res) => {
   try {
     const id = parseInt(req.params.id);
-    const repo = getRepository(); // Ajusta según tu framework (TypeORM)
+    const repo = getRepository(); 
     const usuario = await repo.findOneBy({ id });
     if (!usuario) return res.status(404).json({ mensaje: 'Usuario no encontrado' });
+
+    // --- NUEVA LÓGICA DE SEGURIDAD ---
+    // Verificamos quién está haciendo la petición
+    const esAdmin = req.usuario.rol === 'dtic';
+    
+    // Si NO es el admin, le borramos del body los campos que no tiene permitido tocar.
+    // Así, aunque un usuario intente hackear la petición, el backend los ignorará.
+    if (!esAdmin) {
+      delete req.body.ci;
+      delete req.body.correo;
+      delete req.body.rol;
+      delete req.body.estado;
+      delete req.body.nombres;
+      delete req.body.apellidos;
+    }
+    // ---------------------------------
 
     const {
       username, contrasena, ci, nombres, apellidos,
       correo, telefono, direccion, rol, estado
     } = req.body;
 
-    // --- NUEVA VALIDACIÓN: Evitar nombres de usuario duplicados ---
+    // Validación: Evitar nombres de usuario duplicados
     if (username && username !== usuario.username) {
       const existe = await repo.findOneBy({ username });
       if (existe) {
         return res.status(400).json({ mensaje: 'Este nombre de usuario ya está en uso por otro docente.' });
       }
     }
-    // --------------------------------------------------------------
 
     if (contrasena) usuario.contrasena = await bcrypt.hash(contrasena, 10);
 
@@ -119,8 +134,8 @@ const actualizarUsuario = async (req, res) => {
       nombres: nombres ?? usuario.nombres,
       apellidos: apellidos ?? usuario.apellidos,
       correo: correo ?? usuario.correo,
-      telefono: telefono ?? usuario.telefono,
-      direccion: direccion ?? usuario.direccion,
+      telefono: telefono ?? usuario.telefono,   // ¡Aquí se guarda el teléfono!
+      direccion: direccion ?? usuario.direccion, // ¡Aquí se guarda la dirección!
       rol: rol ?? usuario.rol,
       estado: estado ?? usuario.estado
     });

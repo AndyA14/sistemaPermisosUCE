@@ -267,7 +267,7 @@ function SolicitudesTTHH() {
               </Box>
             </Grid>
           </Grid>
-          {/* ADJUNTOS DESDE LA BASE DE DATOS (ARQUITECTURA UNIFICADA) */}
+          {/* ADJUNTOS DESDE LA BASE DE DATOS (ARQUITECTURA UNIFICADA Y BLINDADA) */}
           <Paper elevation={3} sx={{ mt: 4, p: 4, borderRadius: 2, backgroundColor: 'var(--card-bg)' }}>
             <Typography variant="h6" gutterBottom sx={{ fontWeight: 600, color: 'var(--color-text)' }}>
               Evidencia Adjunta:
@@ -277,11 +277,23 @@ function SolicitudesTTHH() {
               let rutaEvidencia = null;
               
               if (permisoSeleccionado?.documentos && permisoSeleccionado.documentos.length > 0) {
-                // Filtramos archivos autogenerados para quedarnos solo con la evidencia real
-                const doc = permisoSeleccionado.documentos.find(d => d.tipo !== 'Respuesta PDF' && d.tipo !== 'Generado PDF');
+                // 1. PRIORIDAD MÁXIMA: Buscamos explícitamente el archivo que subió el usuario ('Adjunto')
+                let doc = permisoSeleccionado.documentos.find(d => d.tipo === 'Adjunto' || d.tipo === 'Evidencia');
+                
+                // 2. Si por alguna razón no tiene ese tipo, agarramos el que NO sea generado por el sistema
+                if (!doc) {
+                  doc = permisoSeleccionado.documentos.find(d => 
+                    d.tipo !== 'Respuesta PDF' && 
+                    d.tipo !== 'Generado PDF' &&
+                    !d.url.toLowerCase().includes('_autorizado') &&
+                    !d.url.toLowerCase().includes('_denegado')
+                  );
+                }
+
                 if (doc) rutaEvidencia = doc.url || doc.ruta || doc.fileUrl;
               }
               
+              // 3. Fallback solo si la base de datos no trajo la tabla de documentos
               if (!rutaEvidencia) {
                  rutaEvidencia = permisoSeleccionado?.documento || permisoSeleccionado?.url_documento;
               }
@@ -295,7 +307,6 @@ function SolicitudesTTHH() {
                     <Button 
                       variant="outlined" 
                       startIcon={<AttachmentIcon sx={{ color: 'var(--color-text)' }} />}
-                      // Guardamos tanto el nombre como la URL segura para el preview
                       onClick={() => setAdjuntoSeleccionado({ filename: nombreArchivo, urlSegura })}
                     >
                       Ver Evidencia del Docente
@@ -314,7 +325,8 @@ function SolicitudesTTHH() {
             {/* VISOR DE PREVIEW ARREGLADO */}
             {adjuntoSeleccionado && (
               <Box sx={{ mt: 4, textAlign: 'center', p: 2, border: '1px solid var(--color-border)', borderRadius: 2, bgcolor: 'var(--color-bg-secondary)' }}>
-                {adjuntoSeleccionado.urlSegura.toLowerCase().endsWith('.pdf') ? (
+                {/* Ojo aquí: Validamos la extensión usando 'filename', no 'urlSegura' */}
+                {adjuntoSeleccionado.filename.toLowerCase().endsWith('.pdf') ? (
                   <iframe src={adjuntoSeleccionado.urlSegura} width="100%" height="700px" title="Evidencia PDF" style={{ border: 'none', borderRadius: '4px' }} />
                 ) : (
                   <img src={adjuntoSeleccionado.urlSegura} alt="Evidencia" style={{ maxWidth: '100%', maxHeight: '700px', borderRadius: '4px', objectFit: 'contain' }} />

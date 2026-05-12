@@ -225,10 +225,12 @@ async function revisarPorTTHH({ permisoId, observacion, username }) {
     path: path.join(process.cwd(), doc.url),
   })) || [];
 
+  // ── ENVIAR CORREO AL DIRECTOR ────────────────────────────
   try {
     await mailService.enviarCorreo({
       to: process.env.EMAIL_DIRECTOR,
-      subject: `Revisión Pendiente: Permiso de ${permiso.usuario.nombres} ${permiso.usuario.apellidos}`,
+      // ✅ SUBJECT MODIFICADO CON ID (Rompe el hilo en Gmail)
+      subject: `Revisión Pendiente: Permiso de ${permiso.usuario.nombres} ${permiso.usuario.apellidos} - Ref: #${permisoActualizado.id}`,
       html: `
         <h2>Solicitud de Permiso Revisada por TTHH</h2>
         <p>El permiso del funcionario <b>${permiso.usuario.nombres} ${permiso.usuario.apellidos}</b> ha pasado la validación inicial.</p>

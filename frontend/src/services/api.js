@@ -488,5 +488,8 @@ export async function obtenerCorreosUnificadosDirector() {
 
 export const obtenerUrlDocumento = (nombreArchivo) => {
   if (!nombreArchivo) return null;
-  return `${API_URL}/uploads/documentos/${nombreArchivo}`;
+  
+  // SOLUCIÓN: Agregamos "?t=timestamp" para evitar que el navegador use caché
+  const timestamp = new Date().getTime();
+  return `${API_URL}/uploads/documentos/${nombreArchivo}?t=${timestamp}`;
 };

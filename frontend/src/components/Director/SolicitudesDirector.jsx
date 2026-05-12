@@ -389,38 +389,46 @@ function SolicitudesDirector() {
               </Box>
             </Grid>
           </Grid>
-
-          {/* ADJUNTOS DESDE LA BASE DE DATOS (NUEVA ARQUITECTURA) */}
+          
+          {/* ADJUNTOS DESDE LA BASE DE DATOS (FILTRO ESTRICTO) */}
           <Paper elevation={3} sx={{ mt: 4, p: 4, borderRadius: 2, backgroundColor: 'var(--card-bg)' }}>
             <Typography variant="h6" gutterBottom sx={{ fontWeight: 600, color: 'var(--color-text)' }}>
               Evidencia Adjunta:
             </Typography>
             
             {(() => {
-              // 1. Buscamos la evidencia en el arreglo de documentos o en la variable directa
               let rutaEvidencia = null;
               
               if (permisoSeleccionado?.documentos && permisoSeleccionado.documentos.length > 0) {
-                // Buscamos el documento original (ignoramos los PDF de respuesta que genera el sistema)
-                const doc = permisoSeleccionado.documentos.find(d => d.tipo !== 'Respuesta PDF');
-                if (doc) rutaEvidencia = doc.url || doc.ruta || doc.fileUrl;
+                // 1. LISTA NEGRA: Eliminamos todo lo que el sistema crea automáticamente
+                const documentosDocente = permisoSeleccionado.documentos.filter(d => 
+                  d.tipo !== 'Respuesta PDF' && 
+                  d.tipo !== 'Generado PDF' &&
+                  !(d.url || '').toLowerCase().includes('_autorizado') &&
+                  !(d.url || '').toLowerCase().includes('_denegado') &&
+                  !(d.url || '').toLowerCase().includes('_permiso.pdf') // Descarte final
+                );
+
+                // 2. Tomamos el primer archivo que sobreviva al filtro (El del docente)
+                if (documentosDocente.length > 0) {
+                  rutaEvidencia = documentosDocente[0].url || documentosDocente[0].ruta || documentosDocente[0].fileUrl;
+                }
               }
               
-              // Fallback por si tu backend lo envía como variable simple
               if (!rutaEvidencia) {
                  rutaEvidencia = permisoSeleccionado?.documento || permisoSeleccionado?.url_documento;
               }
 
               if (rutaEvidencia) {
-                // 2. Limpiamos la ruta para obtener solo el nombre del archivo
                 const nombreArchivo = rutaEvidencia.split('/').pop();
+                const urlSegura = obtenerUrlDocumento(nombreArchivo);
                 
                 return (
                   <Box>
                     <Button 
                       variant="outlined" 
                       startIcon={<AttachmentIcon sx={{ color: 'var(--color-text)' }} />}
-                      onClick={() => setAdjuntoSeleccionado({ filename: nombreArchivo })}
+                      onClick={() => setAdjuntoSeleccionado({ filename: nombreArchivo, urlSegura })}
                     >
                       Ver Evidencia del Docente
                     </Button>
@@ -435,13 +443,13 @@ function SolicitudesDirector() {
               }
             })()}
 
-            {/* El visor de PDF se mantiene igual */}
+            {/* VISOR DE PREVIEW */}
             {adjuntoSeleccionado && (
               <Box sx={{ mt: 4, textAlign: 'center', p: 2, border: '1px solid var(--color-border)', borderRadius: 2, bgcolor: 'var(--color-bg-secondary)' }}>
-                {obtenerUrlDocumento(adjuntoSeleccionado.filename).toLowerCase().endsWith('.pdf') ? (
-                  <iframe src={obtenerUrlDocumento(adjuntoSeleccionado.filename)} width="100%" height="700px" title="Evidencia PDF" style={{ border: 'none', borderRadius: '4px' }} />
+                {adjuntoSeleccionado.filename.toLowerCase().endsWith('.pdf') ? (
+                  <iframe src={adjuntoSeleccionado.urlSegura} width="100%" height="700px" title="Evidencia PDF" style={{ border: 'none', borderRadius: '4px' }} />
                 ) : (
-                  <img src={obtenerUrlDocumento(adjuntoSeleccionado.filename)} alt="Evidencia" style={{ maxWidth: '100%', maxHeight: '700px', borderRadius: '4px' }} />
+                  <img src={adjuntoSeleccionado.urlSegura} alt="Evidencia" style={{ maxWidth: '100%', maxHeight: '700px', borderRadius: '4px', objectFit: 'contain' }} />
                 )}
               </Box>
             )}

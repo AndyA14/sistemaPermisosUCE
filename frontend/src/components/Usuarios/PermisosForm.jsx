@@ -149,17 +149,17 @@ function PermisosForm() {
 
   const generarHtmlCarta = () => {
     let cartaComponente = null;
+    const nombreDelAdjunto = archivo ? archivo.name : null; // Obtenemos el nombre
 
     if (tipoSeleccionado?.nombre === 'Atraso') {
-      cartaComponente = <CartaAtraso perfil={perfil} form={form} tipoSeleccionado={tipoSeleccionado} />;
+      cartaComponente = <CartaAtraso perfil={perfil} form={form} tipoSeleccionado={tipoSeleccionado} nombreAdjunto={nombreDelAdjunto} />;
     } else if (tipoSeleccionado?.nombre === 'Falta') {
-      cartaComponente = <CartaFalta perfil={perfil} form={form} tipoSeleccionado={tipoSeleccionado} />;
+      cartaComponente = <CartaFalta perfil={perfil} form={form} tipoSeleccionado={tipoSeleccionado} nombreAdjunto={nombreDelAdjunto} />;
     } else if (tipoSeleccionado?.nombre === 'Sin Timbrar') {
-      cartaComponente = <CartaSinTimbrar perfil={perfil} form={form} tipoSeleccionado={tipoSeleccionado} />;
+      cartaComponente = <CartaSinTimbrar perfil={perfil} form={form} tipoSeleccionado={tipoSeleccionado} nombreAdjunto={nombreDelAdjunto} />;
     } else if (tipoSeleccionado?.nombre.includes('Otro')) {
-      cartaComponente = <CartaOtros perfil={perfil} form={form} archivo={archivo} />;
+      cartaComponente = <CartaOtros perfil={perfil} form={form} archivo={archivo} nombreAdjunto={nombreDelAdjunto} />;
     }
-
     if (!cartaComponente) return '';
 
     const estilosCarta = `
@@ -497,10 +497,10 @@ function PermisosForm() {
                     </Typography>
                   </Box>
                 )}
-                {tipoSeleccionado?.nombre === 'Atraso' && <CartaAtraso perfil={perfil} form={form} tipoSeleccionado={tipoSeleccionado} />}
-                {tipoSeleccionado?.nombre === 'Falta' && <CartaFalta perfil={perfil} form={form} tipoSeleccionado={tipoSeleccionado} />}
-                {tipoSeleccionado?.nombre === 'Sin Timbrar' && <CartaSinTimbrar perfil={perfil} form={form} tipoSeleccionado={tipoSeleccionado} />}
-                {tipoSeleccionado?.nombre.includes('Otro') && <CartaOtros perfil={perfil} form={form} archivo={archivo} />}
+                {tipoSeleccionado?.nombre === 'Atraso' && <CartaAtraso perfil={perfil} form={form} tipoSeleccionado={tipoSeleccionado} nombreAdjunto={archivo ? archivo.name : null} />}
+                {tipoSeleccionado?.nombre === 'Falta' && <CartaFalta perfil={perfil} form={form} tipoSeleccionado={tipoSeleccionado} nombreAdjunto={archivo ? archivo.name : null} />}
+                {tipoSeleccionado?.nombre === 'Sin Timbrar' && <CartaSinTimbrar perfil={perfil} form={form} tipoSeleccionado={tipoSeleccionado} nombreAdjunto={archivo ? archivo.name : null} />}
+                {tipoSeleccionado?.nombre.includes('Otro') && <CartaOtros perfil={perfil} form={form} archivo={archivo} nombreAdjunto={archivo ? archivo.name : null} />}
               </Paper>
             </Box>
           </Grid>

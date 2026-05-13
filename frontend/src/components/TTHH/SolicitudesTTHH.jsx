@@ -256,13 +256,40 @@ function SolicitudesTTHH() {
                   }}
                 >
                   {/* INYECTAMOS LA CARTA EN LUGAR DEL HTML DEL CORREO */}
-                  {permisoSeleccionado ? (
-                    <CartaSeguimientoPermiso permiso={permisoSeleccionado} />
-                  ) : (
-                    <Typography align="center" sx={{ mt: 10, color: 'text.secondary' }}>
-                      Cargando documento...
-                    </Typography>
-                  )}
+                  {(() => {
+                    let nombreDelAdjuntoGuardado = null;
+                    
+                    if (permisoSeleccionado?.documentos && permisoSeleccionado.documentos.length > 0) {
+                      // Filtro a prueba de balas: Atrapa PNG, JPG o PDFs que subió el usuario
+                      const docEvidencia = permisoSeleccionado.documentos.find(d => 
+                        d.tipo === 'Adjunto' || 
+                        d.tipo === 'Evidencia' || 
+                        (d.url && 
+                         !d.url.toLowerCase().includes('_autorizado') && 
+                         !d.url.toLowerCase().includes('_denegado') && 
+                         !d.url.toLowerCase().includes('_permiso.pdf') &&
+                         d.tipo !== 'Generado PDF' && 
+                         d.tipo !== 'Respuesta PDF')
+                      );
+                      
+                      if (docEvidencia && docEvidencia.url) {
+                        nombreDelAdjuntoGuardado = docEvidencia.url.split('/').pop();
+                      }
+                    } else if (permisoSeleccionado?.documento) {
+                        nombreDelAdjuntoGuardado = permisoSeleccionado.documento.split('/').pop();
+                    }
+                    // Pon esto justo antes del return permisoSeleccionado ? ( ... )
+                    console.log("👉 DATOS DEL PERMISO SELECCIONADO:", permisoSeleccionado);
+
+                    return permisoSeleccionado ? (
+                      // Pasamos el nombre extraído a tu componente unificado
+                      <CartaSeguimientoPermiso permiso={permisoSeleccionado} nombreAdjunto={nombreDelAdjuntoGuardado} />
+                    ) : (
+                      <Typography align="center" sx={{ mt: 10, color: 'text.secondary' }}>
+                        Cargando documento...
+                      </Typography>
+                    );
+                  })()}
                 </Paper>
               </Box>
             </Grid>

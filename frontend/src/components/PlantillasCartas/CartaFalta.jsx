@@ -2,15 +2,26 @@ import React from 'react';
 import CartaLayout from './CartaLayout';
 
 /**
- * Carta formal para justificar una falta, con redacción clara y adaptada al subtipo y descripción.
+ * Carta formal para justificar una falta,
+ * con redacción clara y adaptada al subtipo y descripción.
  */
-const CartaFalta = ({ perfil, form, archivo, tipoSeleccionado }) => {
+const CartaFalta = ({
+  perfil,
+  form,
+  archivo,
+  tipoSeleccionado,
+  nombreAdjunto, // ← agregado
+}) => {
   if (!perfil || !form) return null;
 
-  // Formatea una fecha legible
+  /**
+   * Formatea una fecha legible
+   */
   const formatearFecha = (fechaStr) => {
     if (!fechaStr) return null;
-    const date = new Date(fechaStr + 'T00:00:00');
+
+    const date = new Date(`${fechaStr}T00:00:00`);
+
     return date.toLocaleDateString('es-EC', {
       day: 'numeric',
       month: 'long',
@@ -28,27 +39,48 @@ const CartaFalta = ({ perfil, form, archivo, tipoSeleccionado }) => {
         : `el período comprendido entre el ${fechaInicio} y el ${fechaFin}`
       : '(fecha no especificada)';
 
-  // Motivo de la falta, usando subtipo y/o descripción
-  const textoFalta = obtenerTextoTipoFalta(form.subtipo, archivo, tipoSeleccionado);
+  /**
+   * Motivo de la falta
+   */
+  const textoFalta = obtenerTextoTipoFalta(
+    form.subtipo,
+    archivo,
+    tipoSeleccionado
+  );
+
   const descripcion = form.descripcion?.trim();
 
   return (
-    <CartaLayout fecha={form.fecha_inicio}>
-      <div className="saludo">De mi consideración:</div>
+    // ← nombreAdjunto enviado al layout
+    <CartaLayout
+      fecha={form.fecha_inicio}
+      nombreAdjunto={nombreAdjunto}
+    >
+      <div className="saludo">
+        De mi consideración:
+      </div>
 
       <div className="contenido-justificado">
         <p>
-          Yo, <strong>{perfil.nombres} {perfil.apellidos}</strong>, portador(a) de la cédula de identidad N.° <strong>{perfil.ci}</strong>, me dirijo a usted respetuosamente con el fin de justificar una <strong>falta</strong> correspondiente a {textoFecha}.
+          Yo, <strong>{perfil.nombres} {perfil.apellidos}</strong>,
+          portador(a) de la cédula de identidad N.°
+          <strong> {perfil.ci}</strong>,
+          me dirijo a usted respetuosamente con el fin de justificar una
+          <strong> falta</strong> correspondiente a {textoFecha}.
         </p>
 
         {(descripcion || textoFalta) && (
           <p>
-            Dicha inasistencia se debió a <em>{formatearMotivo(textoFalta, descripcion)}</em>.
+            Dicha inasistencia se debió a{' '}
+            <em>
+              {formatearMotivo(textoFalta, descripcion)}
+            </em>
           </p>
         )}
 
         <p>
-          Solicito se considere la presente justificación y quedo atento(a) para proporcionar documentación adicional si fuese requerida.
+          Solicito se considere la presente justificación y quedo atento(a)
+          para proporcionar documentación adicional si fuese requerida.
         </p>
       </div>
 
@@ -62,10 +94,18 @@ const CartaFalta = ({ perfil, form, archivo, tipoSeleccionado }) => {
 };
 
 /**
- * Devuelve un texto amigable para el subtipo, considerando si hay respaldo.
+ * Devuelve un texto amigable para el subtipo,
+ * considerando si existe respaldo adjunto.
  */
-const obtenerTextoTipoFalta = (subtipo, archivo, tipoSeleccionado) => {
-  const etiqueta = tipoSeleccionado?.sub_tipos?.find(s => s.value === subtipo)?.label || subtipo;
+const obtenerTextoTipoFalta = (
+  subtipo,
+  archivo,
+  tipoSeleccionado
+) => {
+  const etiqueta =
+    tipoSeleccionado?.sub_tipos?.find(
+      (s) => s.value === subtipo
+    )?.label || subtipo;
 
   if (!etiqueta) return '';
 
@@ -75,32 +115,51 @@ const obtenerTextoTipoFalta = (subtipo, archivo, tipoSeleccionado) => {
       return archivo
         ? `${etiqueta.toLowerCase()} (con respaldo adjunto)`
         : etiqueta.toLowerCase();
+
     default:
       return etiqueta.toLowerCase();
   }
 };
 
 /**
- * Combina subtipo y descripción para un texto claro.
+ * Combina subtipo y descripción
+ * para formar un texto claro.
  */
-const formatearMotivo = (etiqueta = '', descripcion = '') => {
+const formatearMotivo = (
+  etiqueta = '',
+  descripcion = ''
+) => {
   if (etiqueta && descripcion) {
     return `${etiqueta}. ${descripcion.replace(/\.$/, '')}.`;
   }
-  return (etiqueta || descripcion || 'motivos personales').replace(/\.$/, '') + '.';
+
+  return (
+    (etiqueta || descripcion || 'motivos personales')
+      .replace(/\.$/, '') + '.'
+  );
 };
 
 /**
- * Firma del solicitante con todos sus datos.
+ * Firma del solicitante.
  */
 const Firma = ({ perfil }) => (
   <div className="firma-derecha">
     <p>Atentamente,</p>
-    <p><strong>{perfil.nombres} {perfil.apellidos}</strong></p>
+
+    <p>
+      <strong>
+        {perfil.nombres} {perfil.apellidos}
+      </strong>
+    </p>
+
     <p>{perfil.cargo || 'Usuario'}</p>
+
     <p>C.I.: {perfil.ci}</p>
+
     <p>Correo: {perfil.correo}</p>
+
     <p>Teléfono: {perfil.telefono}</p>
+
     <p>Dirección: {perfil.direccion}</p>
   </div>
 );

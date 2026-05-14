@@ -493,3 +493,19 @@ export const obtenerUrlDocumento = (nombreArchivo) => {
   const timestamp = new Date().getTime();
   return `${API_URL}/uploads/documentos/${nombreArchivo}?t=${timestamp}`;
 };
+
+/** * ========================
+ * Certificados
+ * ========================
+ */
+
+export const crearCertificado = async (datosCertificado) => {
+  const res = await fetch(`${API_URL}/certificados`, {
+    method: 'POST',
+    headers: headers(),
+    body: JSON.stringify(datosCertificado),
+  });
+
+  if (!res.ok) throw new Error('Error al crear certificado');
+  return await res.json();
+};

@@ -24,6 +24,7 @@ import SolicitudesTTHH from './components/TTHH/SolicitudesTTHH';
 import ReportesDTIC from './components/DTIC/ReportesDTIC.jsx';
 import GestionUsuarios from './components/DTIC/GestionUsuarios';
 import TipoPermisoGestion from './components/DTIC/TipoPermisoGestion';
+import GenerarCertificado from './components/Admin/GenerarCertificado'; // Ajusta la carpeta según dónde lo guardaste
 
 // Comunes
 import VistaEvidencia from './components/Usuarios/Evidencia/VistaEvidencia';
@@ -121,11 +122,11 @@ function App() {
               <Route path="dashboard/dashboard" element={<SolicitudesDirector />} />
             </Route>
 
-            
-            {/* Admin (a futuro) */}
-            {/* <Route element={<ProtectedRoutes roles={['admin']} />}>
-              <Route path="admin" element={<AdminPage />} />
-            </Route> */}
+            {/* 👑 Rutas exclusivas del Administrador */}
+            <Route element={<ProtectedRoutes roles={['admin']} />}>
+              <Route path="admin/generar-certificado" element={<GenerarCertificado />} />
+            </Route>
+
           </Route>
 
           {/* Página no encontrada */}

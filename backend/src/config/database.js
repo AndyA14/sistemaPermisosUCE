@@ -7,6 +7,7 @@ const TipoPermiso = require('../entity/TipoPermiso');
 const DocumentoPermiso = require('../entity/DocumentoPermiso');
 const PasswordResetToken = require('../entity/PasswordResetToken');
 const HistorialEstadoPermiso = require('../entity/HistorialEstadoPermiso');
+const Certificado = require('../entity/Certificado'); // <-- NUEVA LÍNEA
 
 // Configuración de conexión a base de datos PostgreSQL
 const AppDataSource = new DataSource({
@@ -25,6 +26,7 @@ const AppDataSource = new DataSource({
     DocumentoPermiso,
     PasswordResetToken,
     HistorialEstadoPermiso, 
+    Certificado
   ],
   migrations: [],
   subscribers: [],

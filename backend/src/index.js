@@ -36,6 +36,9 @@ const startServer = () => {
   app.use('/api/correos', mailRoutes);
 
   app.use('/api/uploads', express.static(path.join(__dirname, '../uploads')));
+
+  const certificadoRoutes = require('./routes/certificado.routes');
+  app.use('/api/certificados', certificadoRoutes);
   
   const PORT = process.env.PORT || 3000;
   app.listen(PORT, () => {
